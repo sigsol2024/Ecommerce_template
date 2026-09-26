@@ -19,6 +19,10 @@
     RewriteCond %{REQUEST_URI} ^/public/
     RewriteRule ^ - [L]
 
+    # Site root MUST hit the front controller. Rewriting "/" to "public/" (a directory)
+    # makes Apache show "Index of" when DirectoryIndex fails — while /shop etc. still work.
+    RewriteRule ^$ public/index.php [L]
+
     # Real files at repo root only (not directories — those would skip rewrite and 403)
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
@@ -27,3 +31,4 @@
 </IfModule>
 
 Options -Indexes
+DirectoryIndex index.php

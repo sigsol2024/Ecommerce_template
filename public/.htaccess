@@ -4,6 +4,7 @@
     </IfModule>
 
     RewriteEngine On
+    DirectoryIndex index.php
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -17,6 +18,9 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
+
+    # Front controller: always send the site root to index.php (directory itself is `-d`).
+    RewriteRule ^$ index.php [L]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
