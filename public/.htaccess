@@ -4,7 +4,10 @@
     </IfModule>
 
     RewriteEngine On
-    DirectoryIndex index.php
+
+    <IfModule mod_dir.c>
+        DirectoryIndex index.php
+    </IfModule>
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -19,7 +22,8 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Front controller: always send the site root to index.php (directory itself is `-d`).
+    # "/" is the public directory itself (-d). Force front controller so Apache
+    # cannot fall back to an "Index of" listing.
     RewriteRule ^$ index.php [L]
 
     # Send Requests To Front Controller...
@@ -27,3 +31,9 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+<IfModule mod_dir.c>
+    DirectoryIndex index.php
+</IfModule>
+
+Options -Indexes
