@@ -316,9 +316,10 @@ Route::middleware(['auth', 'staff', 'admin.audit'])->prefix('admin')->group(func
     Route::put('/pages/{slug}', [AdminPageController::class, 'update'])->middleware('permission:pages.manage')->name('admin.pages.update');
     Route::get('/media', [AdminMediaController::class, 'index'])->middleware('permission:media.manage')->name('admin.media.index');
     Route::post('/media', [MediaLibraryController::class, 'upload'])->middleware('permission:media.manage')->name('admin.media.upload');
-    Route::delete('/media/{media}', [AdminMediaController::class, 'destroy'])->middleware('permission:media.manage')->name('admin.media.destroy');
-    Route::post('/media/{media}', [AdminMediaController::class, 'destroy'])->middleware('permission:media.manage')->name('admin.media.destroy.post');
+    // Static path must be registered before /media/{media} or "bulk-delete" is captured as an ID → 404.
     Route::post('/media/bulk-delete', [AdminMediaController::class, 'bulkDestroy'])->middleware('permission:media.manage')->name('admin.media.bulk-destroy');
+    Route::delete('/media/{media}', [AdminMediaController::class, 'destroy'])->middleware('permission:media.manage')->whereNumber('media')->name('admin.media.destroy');
+    Route::post('/media/{media}', [AdminMediaController::class, 'destroy'])->middleware('permission:media.manage')->whereNumber('media')->name('admin.media.destroy.post');
     Route::get('/api/media', [MediaLibraryController::class, 'list'])->middleware('permission:media.manage')->name('admin.media.list');
 
     Route::get('/settings', [AdminSiteSettingsController::class, 'edit'])->middleware('permission:settings.manage')->name('admin.settings.edit');
