@@ -19,6 +19,20 @@
 @endphp
 
 <tr class="group">
+  @if ($isAdminList)
+    <td>
+      <label class="inline-flex items-center">
+        <input
+          type="checkbox"
+          class="rounded border-gray-300 text-indigo-600"
+          :value="{{ (int) $vehicle->id }}"
+          x-model.number="selected"
+          @click.stop
+        >
+        <span class="sr-only">{{ __('Select product') }}</span>
+      </label>
+    </td>
+  @endif
   <td>
     <div class="w-12 h-14 bg-wp-bg overflow-hidden rounded">
       <img src="{{ $thumbUrl }}" alt="" class="w-full h-full object-cover" loading="lazy" />

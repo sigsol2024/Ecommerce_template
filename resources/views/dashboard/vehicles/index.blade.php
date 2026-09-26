@@ -8,6 +8,7 @@
           'q' => $searchQuery !== '' ? $searchQuery : null,
       ], $extra), static fn ($value) => $value !== null && $value !== '');
   };
+  $pageProductIds = $vehicles->getCollection()->pluck('id')->map(static fn ($id) => (int) $id)->values()->all();
 @endphp
 <x-app-layout>
   <div
@@ -17,6 +18,8 @@
       openMenuId: null,
       rejectExpandedId: null,
       expandedMobileId: null,
+      selected: [],
+      pageIds: @js($pageProductIds),
       toggleOpen(id) {
         this.openId = this.openId === id ? null : id;
       },
@@ -38,6 +41,12 @@
       },
       toggleReject(id) {
         this.rejectExpandedId = this.rejectExpandedId === id ? null : id;
+      },
+      toggleSelectAll() {
+        this.selected = (this.selected.length === this.pageIds.length) ? [] : [...this.pageIds];
+      },
+      isSelected(id) {
+        return this.selected.includes(id);
       },
     }"
     @keydown.escape.window="closeMenus(); openId = null"
@@ -128,12 +137,41 @@
         @if ($vehicles->total() === 0)
           <x-admin.empty-state :title="__('No products match this filter.')" />
         @else
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              @click="toggleSelectAll()"
+              class="rounded border border-wp-border bg-white px-3 py-2 text-xs font-semibold text-wp-text hover:bg-wp-bg"
+            >
+              <span x-text="selected.length === pageIds.length && pageIds.length > 0 ? @js(__('Unselect all on this page')) : @js(__('Select all on this page'))"></span>
+            </button>
+            <form
+              method="post"
+              action="{{ route('dashboard.vehicles.bulk-destroy') }}"
+              x-show="selected.length > 0"
+              x-cloak
+              @submit="if (!confirm(@js(__('Delete selected products? This cannot be undone.')))) $event.preventDefault();"
+              class="inline-flex"
+            >
+              @csrf
+              <template x-for="id in selected" :key="id">
+                <input type="hidden" name="ids[]" :value="id">
+              </template>
+              <button type="submit" class="rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700">
+                {{ __('Delete selected') }} (<span x-text="selected.length"></span>)
+              </button>
+            </form>
+          </div>
+
           {{-- Desktop table (lg+) --}}
           <x-admin.card variant="table" class="hidden lg:block">
             <div class="overflow-x-auto">
               <table class="w-full border-collapse text-left admin-luxe-table">
                 <thead>
                   <tr>
+                    <th class="w-10">
+                      <span class="sr-only">{{ __('Select') }}</span>
+                    </th>
                     <th class="w-20">{{ __('Image') }}</th>
                     <th>{{ __('Product') }}</th>
                     <th>{{ __('Category') }}</th>

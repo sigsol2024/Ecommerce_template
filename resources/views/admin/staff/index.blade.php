@@ -317,7 +317,8 @@
               name="role"
               class="mt-1 block w-full rounded-lg border-zinc-300 text-sm"
               x-bind:disabled="editUser && editUser.is_super_admin"
-              x-model="editUser ? editUser.role : 'editor'"
+              x-bind:value="editUser ? editUser.role : 'editor'"
+              @change="if (editUser) editUser.role = $event.target.value"
             >
               <option value="editor">{{ __('Editor') }}</option>
               <option value="admin">{{ __('Admin') }}</option>

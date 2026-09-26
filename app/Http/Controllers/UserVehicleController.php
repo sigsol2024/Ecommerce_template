@@ -26,7 +26,7 @@ class UserVehicleController extends Controller
         $isStaffList = $request->user()->can('products.manage') && $request->user()->isStaff();
 
         $query = Vehicle::query()
-            ->with(['user.roles', 'categoryOption'])
+            ->with(['user.roles', 'categoryOption', 'images'])
             ->latest();
 
         if (! $isStaffList) {
@@ -259,6 +259,34 @@ class UserVehicleController extends Controller
         return redirect()
             ->route('dashboard.vehicles.index')
             ->with('status', 'Listing deleted.');
+    }
+
+    public function bulkDestroy(Request $request, AdminAuditLogger $audit): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->can('products.manage') && $user->isStaff(), 403);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $data['ids'])));
+        $vehicles = Vehicle::query()->whereIn('id', $ids)->get();
+
+        foreach ($vehicles as $vehicle) {
+            $audit->logProductDeleted($request, $vehicle);
+            $this->deleteLocalVehicleImageFiles($vehicle);
+            $vehicle->delete();
+        }
+
+        $count = $vehicles->count();
+
+        return redirect()
+            ->route('dashboard.vehicles.index')
+            ->with('status', $count === 1
+                ? __('1 product deleted.')
+                : __(':count products deleted.', ['count' => $count]));
     }
 
     public function destroyImage(Request $request, Vehicle $vehicle, VehicleImage $image): RedirectResponse|JsonResponse

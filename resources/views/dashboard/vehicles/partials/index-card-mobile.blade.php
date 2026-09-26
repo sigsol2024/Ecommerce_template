@@ -21,6 +21,17 @@
   class="bg-white border border-wp-border rounded overflow-hidden"
 >
   <div class="flex items-center gap-3 p-3">
+    @if ($isAdminList)
+      <label class="inline-flex items-center shrink-0" @click.stop>
+        <input
+          type="checkbox"
+          class="rounded border-gray-300 text-indigo-600"
+          :value="{{ (int) $vehicle->id }}"
+          x-model.number="selected"
+        >
+        <span class="sr-only">{{ __('Select product') }}</span>
+      </label>
+    @endif
     <button
       type="button"
       class="flex items-center gap-3 flex-1 min-w-0 text-left"
