@@ -6,6 +6,7 @@ use App\Models\ListingOption;
 use App\Models\ListingOptionCategory;
 use App\Support\CountryFlagEmoji;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Seeds 100+ country root options with regional-indicator flag emoji (ISO alpha-2).
@@ -15,10 +16,16 @@ class ListingOptionCountriesSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! Schema::hasTable('listing_options') || ! Schema::hasTable('listing_option_categories')) {
+            return;
+        }
+
         $categoryId = ListingOptionCategory::query()->where('slug', 'country')->value('id');
         if (! $categoryId) {
             return;
         }
+
+        $hasFlagEmoji = Schema::hasColumn('listing_options', 'flag_emoji');
 
         $lines = array_filter(array_map('trim', explode("\n", self::countryCsv())));
         $order = 1;
@@ -34,18 +41,24 @@ class ListingOptionCountriesSeeder extends Seeder
             if ($code === '' || $name === '') {
                 continue;
             }
-            $flag = CountryFlagEmoji::fromAlpha2($code);
+
+            $attributes = [
+                'sort_order' => $order++,
+                'is_active' => true,
+            ];
+
+            if ($hasFlagEmoji) {
+                $flag = CountryFlagEmoji::fromAlpha2($code);
+                $attributes['flag_emoji'] = $flag !== '' ? $flag : null;
+            }
+
             ListingOption::query()->updateOrCreate(
                 [
                     'category_id' => (int) $categoryId,
                     'parent_id' => null,
                     'value' => $name,
                 ],
-                [
-                    'sort_order' => $order++,
-                    'is_active' => true,
-                    'flag_emoji' => $flag !== '' ? $flag : null,
-                ]
+                $attributes
             );
         }
     }
