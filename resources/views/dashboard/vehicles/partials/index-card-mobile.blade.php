@@ -21,7 +21,7 @@
   class="bg-white border border-wp-border rounded overflow-hidden"
 >
   <div class="flex items-center gap-3 p-3">
-    @if ($isAdminList)
+    @if ($canBulkDestroy ?? false)
       <label class="inline-flex items-center shrink-0" @click.stop>
         <input
           type="checkbox"

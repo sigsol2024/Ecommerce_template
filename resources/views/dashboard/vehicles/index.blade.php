@@ -8,7 +8,11 @@
           'q' => $searchQuery !== '' ? $searchQuery : null,
       ], $extra), static fn ($value) => $value !== null && $value !== '');
   };
-  $pageProductIds = $vehicles->getCollection()->pluck('id')->map(static fn ($id) => (int) $id)->values()->all();
+  $pageProductIds = collect($vehicles->items())->pluck('id')->map(static fn ($id) => (int) $id)->values()->all();
+  // Never call route('dashboard.vehicles.bulk-destroy') here — a missing named route 500s the whole page.
+  // Form posts to this fixed path; the matching Route::post is in routes/web.php.
+  $bulkDestroyUrl = url('/dashboard/vehicles-bulk-destroy');
+  $canBulkDestroy = (bool) $isAdminList;
 @endphp
 <x-app-layout>
   <div
@@ -20,6 +24,11 @@
       expandedMobileId: null,
       selected: [],
       pageIds: @js($pageProductIds),
+      labels: {
+        selectAll: @js(__('Select all on this page')),
+        unselectAll: @js(__('Unselect all on this page')),
+        confirmBulkDelete: @js(__('Delete selected products? This cannot be undone.')),
+      },
       toggleOpen(id) {
         this.openId = this.openId === id ? null : id;
       },
@@ -137,31 +146,33 @@
         @if ($vehicles->total() === 0)
           <x-admin.empty-state :title="__('No products match this filter.')" />
         @else
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <button
-              type="button"
-              @click="toggleSelectAll()"
-              class="rounded border border-wp-border bg-white px-3 py-2 text-xs font-semibold text-wp-text hover:bg-wp-bg"
-            >
-              <span x-text="selected.length === pageIds.length && pageIds.length > 0 ? @js(__('Unselect all on this page')) : @js(__('Select all on this page'))"></span>
-            </button>
-            <form
-              method="post"
-              action="{{ route('dashboard.vehicles.bulk-destroy') }}"
-              x-show="selected.length > 0"
-              x-cloak
-              @submit="if (!confirm(@js(__('Delete selected products? This cannot be undone.')))) $event.preventDefault();"
-              class="inline-flex"
-            >
-              @csrf
-              <template x-for="id in selected" :key="id">
-                <input type="hidden" name="ids[]" :value="id">
-              </template>
-              <button type="submit" class="rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700">
-                {{ __('Delete selected') }} (<span x-text="selected.length"></span>)
+          @if ($canBulkDestroy)
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                @click="toggleSelectAll()"
+                class="rounded border border-wp-border bg-white px-3 py-2 text-xs font-semibold text-wp-text hover:bg-wp-bg"
+              >
+                <span x-text="selected.length === pageIds.length && pageIds.length > 0 ? labels.unselectAll : labels.selectAll"></span>
               </button>
-            </form>
-          </div>
+              <form
+                method="post"
+                action="{{ $bulkDestroyUrl }}"
+                x-show="selected.length > 0"
+                x-cloak
+                @submit="if (!confirm(labels.confirmBulkDelete)) $event.preventDefault();"
+                class="inline-flex"
+              >
+                @csrf
+                <template x-for="id in selected" :key="'bulk-product-' + id">
+                  <input type="hidden" name="ids[]" :value="id">
+                </template>
+                <button type="submit" class="rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700">
+                  {{ __('Delete selected') }} (<span x-text="selected.length"></span>)
+                </button>
+              </form>
+            </div>
+          @endif
 
           {{-- Desktop table (lg+) --}}
           <x-admin.card variant="table" class="hidden lg:block">
@@ -169,9 +180,11 @@
               <table class="w-full border-collapse text-left admin-luxe-table">
                 <thead>
                   <tr>
-                    <th class="w-10">
-                      <span class="sr-only">{{ __('Select') }}</span>
-                    </th>
+                    @if ($canBulkDestroy)
+                      <th class="w-10">
+                        <span class="sr-only">{{ __('Select') }}</span>
+                      </th>
+                    @endif
                     <th class="w-20">{{ __('Image') }}</th>
                     <th>{{ __('Product') }}</th>
                     <th>{{ __('Category') }}</th>
@@ -182,7 +195,11 @@
                 </thead>
                 <tbody>
                   @foreach ($vehicles as $vehicle)
-                    @include('dashboard.vehicles.partials.index-row-luxe', ['vehicle' => $vehicle, 'isAdminList' => $isAdminList])
+                    @include('dashboard.vehicles.partials.index-row-luxe', [
+                      'vehicle' => $vehicle,
+                      'isAdminList' => $isAdminList,
+                      'canBulkDestroy' => $canBulkDestroy,
+                    ])
                   @endforeach
                 </tbody>
               </table>
@@ -192,7 +209,11 @@
           {{-- Mobile accordion (<lg) --}}
           <div class="lg:hidden space-y-2">
             @foreach ($vehicles as $vehicle)
-              @include('dashboard.vehicles.partials.index-card-mobile', ['vehicle' => $vehicle, 'isAdminList' => $isAdminList])
+              @include('dashboard.vehicles.partials.index-card-mobile', [
+                'vehicle' => $vehicle,
+                'isAdminList' => $isAdminList,
+                'canBulkDestroy' => $canBulkDestroy,
+              ])
             @endforeach
           </div>
 

@@ -19,7 +19,7 @@
 @endphp
 
 <tr class="group">
-  @if ($isAdminList)
+  @if ($canBulkDestroy ?? false)
     <td>
       <label class="inline-flex items-center">
         <input

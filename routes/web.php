@@ -147,7 +147,6 @@ Route::middleware(['auth', 'vendor.idle'])->group(function () {
 
         Route::middleware('admin.audit')->group(function () {
             Route::post('/vehicles', [UserVehicleController::class, 'store'])->name('dashboard.vehicles.store');
-            Route::post('/vehicles/bulk-destroy', [UserVehicleController::class, 'bulkDestroy'])->name('dashboard.vehicles.bulk-destroy');
             Route::put('/vehicles/{vehicle}', [UserVehicleController::class, 'update'])->name('dashboard.vehicles.update');
             Route::post('/vehicles/{vehicle}/submit', [UserVehicleController::class, 'submit'])->name('dashboard.vehicles.submit');
             Route::delete('/vehicles/{vehicle}', [UserVehicleController::class, 'destroy'])->name('dashboard.vehicles.destroy');
@@ -155,6 +154,11 @@ Route::middleware(['auth', 'vendor.idle'])->group(function () {
             Route::post('/vehicles/{vehicle}/images/{image}', [UserVehicleController::class, 'destroyImage'])->name('dashboard.vehicles.images.destroy.post');
         });
     });
+
+    // Explicit full path (not nested under /vehicles/{id}) so the products list can POST here safely.
+    Route::post('/dashboard/vehicles-bulk-destroy', [UserVehicleController::class, 'bulkDestroy'])
+        ->middleware('admin.audit')
+        ->name('dashboard.vehicles.bulk-destroy');
 
     Route::get('/dashboard/listing-models/{make}', [ListingOptionLookupController::class, 'modelsForMake'])
         ->whereNumber('make')
