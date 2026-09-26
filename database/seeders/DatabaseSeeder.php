@@ -41,6 +41,11 @@ class DatabaseSeeder extends Seeder
         $this->call(CmsPagesSeeder::class);
         $this->call(PageSectionsSeeder::class);
         $this->call(MediaSeeder::class);
-        $this->call(ListingOptionCountriesSeeder::class);
+
+        // Countries need listing_options.flag_emoji (migration 2026_05_10). Skip until migrate has caught up;
+        // migration 2026_05_12 also seeds countries once that column exists.
+        if (\Illuminate\Support\Facades\Schema::hasColumn('listing_options', 'flag_emoji')) {
+            $this->call(ListingOptionCountriesSeeder::class);
+        }
     }
 }
