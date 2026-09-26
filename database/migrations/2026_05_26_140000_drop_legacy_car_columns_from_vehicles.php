@@ -85,9 +85,14 @@ return new class extends Migration
             });
         }
 
+        // type_listing_option_id may exist without an InnoDB FK (MariaDB errno 150 / partial DDL).
+        // Never call dropConstrainedForeignId — it assumes vehicles_type_listing_option_id_foreign exists.
         if (Schema::hasColumn('vehicles', 'type_listing_option_id')) {
+            $this->dropForeignKeysOnVehiclesColumn('type_listing_option_id');
+            $this->dropIndexIfExists('vehicles_type_listing_option_id_foreign');
+            $this->dropIndexIfExists('vehicles_type_listing_option_id_index');
             Schema::table('vehicles', function (Blueprint $table) {
-                $table->dropConstrainedForeignId('type_listing_option_id');
+                $table->dropColumn('type_listing_option_id');
             });
         }
     }
@@ -133,6 +138,36 @@ return new class extends Migration
             'vehicles_drive_listing_option_id_index',
             'vehicles_country_listing_option_id_index',
         ];
+    }
+
+    private function dropForeignKeysOnVehiclesColumn(string $columnName): void
+    {
+        $driver = DB::getDriverName();
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
+        $constraints = DB::select(
+            'SELECT DISTINCT CONSTRAINT_NAME AS name
+             FROM information_schema.KEY_COLUMN_USAGE
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = ?
+               AND COLUMN_NAME = ?
+               AND REFERENCED_TABLE_NAME IS NOT NULL',
+            ['vehicles', $columnName]
+        );
+
+        foreach ($constraints as $row) {
+            $name = (string) ($row->name ?? '');
+            if ($name === '') {
+                continue;
+            }
+            try {
+                DB::statement('ALTER TABLE `vehicles` DROP FOREIGN KEY `'.$name.'`');
+            } catch (\Throwable) {
+                // Already gone or named differently — column drop below still proceeds.
+            }
+        }
     }
 
     private function dropIndexIfExists(string $indexName): void
