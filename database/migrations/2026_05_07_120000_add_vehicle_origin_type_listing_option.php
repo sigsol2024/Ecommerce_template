@@ -53,15 +53,23 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('vehicles', function (Blueprint $table) {
-            if (! Schema::hasColumn('vehicles', 'type_listing_option_id')) {
-                $table->foreignId('type_listing_option_id')
-                    ->nullable()
-                    ->after('country_listing_option_id')
-                    ->constrained('listing_options')
-                    ->nullOnDelete();
-            }
-        });
+        if (! Schema::hasColumn('vehicles', 'type_listing_option_id')) {
+            $afterColumn = Schema::hasColumn('vehicles', 'country_listing_option_id')
+                ? 'country_listing_option_id'
+                : null;
+
+            Schema::table('vehicles', function (Blueprint $table) use ($afterColumn) {
+                $column = $table->foreignId('type_listing_option_id')->nullable();
+                if ($afterColumn !== null) {
+                    $column->after($afterColumn);
+                }
+                $column->constrained('listing_options')->nullOnDelete();
+            });
+        }
+
+        if (! Schema::hasColumn('vehicles', 'type_listing_option_id')) {
+            return;
+        }
 
         $nigerianId = (int) DB::table('listing_options')
             ->where('category_id', $catId)
@@ -76,7 +84,8 @@ return new class extends Migration
             ->value('id');
 
         $countryCatId = (int) DB::table('listing_option_categories')->where('slug', 'country')->value('id');
-        $nigeriaId = $countryCatId > 0
+        $hasCountryFk = Schema::hasColumn('vehicles', 'country_listing_option_id');
+        $nigeriaId = ($hasCountryFk && $countryCatId > 0)
             ? (int) DB::table('listing_options')
                 ->where('category_id', $countryCatId)
                 ->whereNull('parent_id')
@@ -84,7 +93,7 @@ return new class extends Migration
                 ->value('id')
             : 0;
 
-        if ($nigerianId > 0 && $nigeriaId > 0) {
+        if ($nigerianId > 0 && $nigeriaId > 0 && $hasCountryFk) {
             DB::table('vehicles')
                 ->whereNull('type_listing_option_id')
                 ->where('country_listing_option_id', $nigeriaId)
