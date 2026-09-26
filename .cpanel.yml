@@ -1,0 +1,6 @@
+---
+deployment:
+  tasks:
+    - /usr/local/bin/php /home/vcphotel/auction.vcphotels.com/artisan view:clear || true
+    - /usr/local/bin/php /home/vcphotel/auction.vcphotels.com/artisan route:clear || true
+    - /usr/local/bin/php /home/vcphotel/auction.vcphotels.com/artisan cache:clear || true
