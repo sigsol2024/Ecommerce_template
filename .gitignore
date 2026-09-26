@@ -1,0 +1,25 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+
+# Frontend: build locally (`npm ci && npm run build`), commit `public/build/`, deploy via Git.
+# Do not upload node_modules to production; cPanel does not need npm if `public/build` is in the repo.
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+Homestead.json
+Homestead.yaml
+Thumbs.db
