@@ -18,11 +18,9 @@ return new class extends Migration
             throw new RuntimeException('Migration 2026_05_02_120200 requires listing_option tables. Run earlier migrations first.');
         }
 
+        // Already past this step (lean ecommerce schema, or FKs already present without legacy strings).
         if (! Schema::hasColumn('vehicles', 'make')) {
-            if (Schema::hasColumn('vehicles', 'make_listing_option_id')) {
-                return;
-            }
-            throw new RuntimeException('vehicles table is missing legacy make column and make_listing_option_id; cannot migrate.');
+            return;
         }
 
         $listingOptionFkSpec = $this->listingOptionsIdFkSpec();
@@ -33,12 +31,15 @@ return new class extends Migration
                 continue;
             }
 
-            Schema::table('vehicles', function (Blueprint $table) use ($listingOptionFkSpec, $columnName, $afterColumn) {
+            // Prefer afterColumn when it exists; otherwise append (partial schemas / MariaDB).
+            $after = Schema::hasColumn('vehicles', $afterColumn) ? $afterColumn : null;
+
+            Schema::table('vehicles', function (Blueprint $table) use ($listingOptionFkSpec, $columnName, $after) {
                 self::addNullableListingOptionIdColumnIndexed(
                     $table,
                     $listingOptionFkSpec,
                     $columnName,
-                    $afterColumn
+                    $after
                 );
             });
         }
@@ -78,9 +79,13 @@ return new class extends Migration
                 .(count($failures) > 50 ? "\n... and ".(count($failures) - 50).' more' : ''));
         }
 
+        // Apparel pivot stubs resolveLegacyRowToForeignKeys() as []; never UPDATE with an empty SET.
         DB::table('vehicles')->orderBy('id')->chunkById(200, function ($rows) {
             foreach ($rows as $row) {
                 $fk = ListingOptionCatalogSync::resolveLegacyRowToForeignKeys($row);
+                if ($fk === []) {
+                    continue;
+                }
                 DB::table('vehicles')->where('id', $row->id)->update($fk);
             }
         });
@@ -92,20 +97,24 @@ return new class extends Migration
             }
         }
 
-        Schema::table('vehicles', function (Blueprint $table) {
-            $table->dropColumn([
-                'make',
-                'model',
-                'condition',
-                'body_type',
-                'transmission',
-                'fuel_type',
-                'drive',
-                'country',
-                'location',
-                'contact_address',
-            ]);
-        });
+        $legacyStringColumns = array_values(array_filter([
+            'make',
+            'model',
+            'condition',
+            'body_type',
+            'transmission',
+            'fuel_type',
+            'drive',
+            'country',
+            'location',
+            'contact_address',
+        ], fn (string $column) => Schema::hasColumn('vehicles', $column)));
+
+        if ($legacyStringColumns !== []) {
+            Schema::table('vehicles', function (Blueprint $table) use ($legacyStringColumns) {
+                $table->dropColumn($legacyStringColumns);
+            });
+        }
     }
 
     public function down(): void
@@ -222,47 +231,30 @@ return new class extends Migration
         Blueprint $table,
         array $spec,
         string $columnName,
-        string $afterColumn,
+        ?string $afterColumn,
     ): void {
         $dataType = $spec['data_type'];
         $unsigned = $spec['unsigned'];
 
-        switch (true) {
-            case $dataType === 'bigint' && $unsigned:
-                $table->unsignedBigInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'bigint' && ! $unsigned:
-                $table->bigInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'int' && $unsigned:
-                $table->unsignedInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'int' && ! $unsigned:
-                $table->integer($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'mediumint' && $unsigned:
-                $table->unsignedMediumInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'mediumint' && ! $unsigned:
-                $table->mediumInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'smallint' && $unsigned:
-                $table->unsignedSmallInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'smallint' && ! $unsigned:
-                $table->smallInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'tinyint' && $unsigned:
-                $table->unsignedTinyInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            case $dataType === 'tinyint' && ! $unsigned:
-                $table->tinyInteger($columnName)->nullable()->after($afterColumn);
-                break;
-            default:
-                throw new RuntimeException(sprintf(
-                    'listing_options.id has unsupported INTEGER DATA_TYPE `%s`; cannot add matching columns on vehicles.',
-                    $dataType
-                ));
+        $column = match (true) {
+            $dataType === 'bigint' && $unsigned => $table->unsignedBigInteger($columnName)->nullable(),
+            $dataType === 'bigint' && ! $unsigned => $table->bigInteger($columnName)->nullable(),
+            $dataType === 'int' && $unsigned => $table->unsignedInteger($columnName)->nullable(),
+            $dataType === 'int' && ! $unsigned => $table->integer($columnName)->nullable(),
+            $dataType === 'mediumint' && $unsigned => $table->unsignedMediumInteger($columnName)->nullable(),
+            $dataType === 'mediumint' && ! $unsigned => $table->mediumInteger($columnName)->nullable(),
+            $dataType === 'smallint' && $unsigned => $table->unsignedSmallInteger($columnName)->nullable(),
+            $dataType === 'smallint' && ! $unsigned => $table->smallInteger($columnName)->nullable(),
+            $dataType === 'tinyint' && $unsigned => $table->unsignedTinyInteger($columnName)->nullable(),
+            $dataType === 'tinyint' && ! $unsigned => $table->tinyInteger($columnName)->nullable(),
+            default => throw new RuntimeException(sprintf(
+                'listing_options.id has unsupported INTEGER DATA_TYPE `%s`; cannot add matching columns on vehicles.',
+                $dataType
+            )),
+        };
+
+        if ($afterColumn !== null && $afterColumn !== '') {
+            $column->after($afterColumn);
         }
 
         $table->index($columnName);

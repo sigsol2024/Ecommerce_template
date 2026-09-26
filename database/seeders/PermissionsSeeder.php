@@ -41,12 +41,17 @@ class PermissionsSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
+        $guard = config('auth.defaults.guard', 'web');
+
         foreach (self::ALL as $name) {
-            Permission::findOrCreate($name);
+            Permission::findOrCreate($name, $guard);
         }
 
-        $admin = Role::findOrCreate('admin');
-        $editor = Role::findOrCreate('editor');
+        // Spatie caches the permission list; refresh after creates so syncPermissions can resolve names.
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $admin = Role::findOrCreate('admin', $guard);
+        $editor = Role::findOrCreate('editor', $guard);
 
         $admin->syncPermissions(self::ALL);
         $editor->syncPermissions(self::EDITOR);
