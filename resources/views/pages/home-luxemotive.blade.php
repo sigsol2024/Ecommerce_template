@@ -43,8 +43,8 @@
                 open: false,
                 loading: false,
                 abort: null,
-                endpoint: @js(route('api.products.search')),
-                shopUrl: @js(route('shop.index')),
+                endpoint: @js(url('/api/products/search')),
+                shopUrl: @js(url('/shop')),
                 async search() {
                   const term = (this.q || '').trim();
                   if (term.length < 2) {

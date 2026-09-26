@@ -15,9 +15,9 @@
     RewriteCond %{REQUEST_URI} ^/public/
     RewriteRule ^ - [L]
 
-    # Homepage: always the front controller (never list public/ as a directory)
-    RewriteRule ^$ index.php [L]
-    RewriteRule ^index\.php$ - [L]
+    # Homepage: boot via public front controller (same path as /shop)
+    RewriteRule ^$ public/index.php [L]
+    RewriteRule ^index\.php$ public/index.php [L]
 
     # Real files at repo root (favicon, robots if present) — serve as-is
     RewriteCond %{REQUEST_FILENAME} -f

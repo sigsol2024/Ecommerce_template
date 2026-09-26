@@ -1,10 +1,10 @@
 <?php
 
 /**
- * cPanel / docroot-at-project-root front controller.
+ * Front controller when the domain document root is the Laravel project root
+ * (common on cPanel). Without this file, Apache serves "Index of /" for "/"
+ * and never boots Laravel — so storage/logs stays empty.
  *
- * Visiting "/" maps to this directory. If .htaccess rewrite to public/ fails or is
- * ignored, Apache falls through to DirectoryIndex — without this file it shows
- * "Index of /" while paths like /shop still rewrite correctly into public/.
+ * Preferred long-term setup: point the domain document root at /public instead.
  */
 require __DIR__.'/public/index.php';
