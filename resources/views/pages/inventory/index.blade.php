@@ -7,7 +7,7 @@
 @section('content')
   @php
     $activeFilterCount = collect([
-      'q', 'featured', 'product_category_listing_option_id', 'price_min', 'price_max',
+      'q', 'featured', 'product_category_listing_option_id', 'size_id', 'color_id', 'price_min', 'price_max',
     ])->filter(function ($k) use ($filters) {
         if ($k === 'featured') {
             return ! empty($filters['featured']);
@@ -71,7 +71,7 @@
                 @include('partials.vehicle-hover-gallery', [
                   'vehicle' => $vehicle,
                   'fallback' => $invFallback,
-                  'imgClass' => 'w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110',
+                  'imgClass' => 'w-full h-full object-contain object-center transition-transform duration-700 ease-out group-hover:scale-105',
                 ])
                 @if ($vehicle->is_special)
                   <span class="absolute top-4 left-4 bg-background text-primary px-3 py-1 font-label-caps text-[10px] border border-outline-variant">{{ __('NEW ARRIVAL') }}</span>

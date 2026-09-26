@@ -5,7 +5,7 @@
   if ($tagline === '') {
     $tagline = __('THE PINNACLE OF AFRICAN ARTISANSHIP AND GLOBAL LUXURY DESIGN.');
   }
-  $newsletterEnabled = (string) ($site['newsletter_enabled'] ?? '0') === '1';
+  $newsletterEnabled = false; // Temporarily hide footer newsletter (keep markup below for later).
   $newsletterNote = trim((string) ($site['newsletter_note'] ?? ''));
   $privacyUrl = trim((string) ($site['footer_privacy_url'] ?? ''));
   $termsUrl = trim((string) ($site['footer_terms_url'] ?? ''));

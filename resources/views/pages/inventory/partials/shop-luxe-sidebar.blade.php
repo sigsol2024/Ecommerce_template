@@ -29,50 +29,56 @@
     >{{ __('Featured products') }}</a>
   </section>
 
-  <section>
-    <h3 class="font-label-caps text-label-caps text-primary mb-6 border-b border-outline-variant pb-2">{{ __('CATEGORIES') }}</h3>
-    <select
-      name="product_category_listing_option_id"
-      class="w-full border-b border-outline-variant bg-transparent py-2 font-label-caps text-[11px] uppercase tracking-widest focus:border-primary focus:outline-none"
-      onchange="this.form.submit()"
-      aria-label="{{ __('Category') }}"
-    >
-      <option value="">{{ __('ALL PRODUCTS') }}</option>
-      @foreach ($categories as $row)
-        <option value="{{ $row->id }}" @selected($activeCategory === (int) $row->id)>{{ strtoupper($row->value) }}</option>
-      @endforeach
-    </select>
-  </section>
+  @if ($categories->isNotEmpty())
+    <section>
+      <h3 class="font-label-caps text-label-caps text-primary mb-6 border-b border-outline-variant pb-2">{{ __('CATEGORIES') }}</h3>
+      <select
+        name="product_category_listing_option_id"
+        class="w-full border-b border-outline-variant bg-transparent py-2 font-label-caps text-[11px] uppercase tracking-widest focus:border-primary focus:outline-none"
+        onchange="this.form.submit()"
+        aria-label="{{ __('Category') }}"
+      >
+        <option value="">{{ __('ALL PRODUCTS') }}</option>
+        @foreach ($categories as $row)
+          <option value="{{ $row->id }}" @selected($activeCategory === (int) $row->id)>{{ strtoupper($row->value) }}</option>
+        @endforeach
+      </select>
+    </section>
+  @endif
 
-  <section>
-    <h3 class="font-label-caps text-label-caps text-primary mb-6 border-b border-outline-variant pb-2">{{ __('SIZE') }}</h3>
-    <select
-      name="size_id"
-      class="w-full border-b border-outline-variant bg-transparent py-2 font-label-caps text-[11px] uppercase tracking-widest focus:border-primary focus:outline-none"
-      onchange="this.form.submit()"
-      aria-label="{{ __('Size') }}"
-    >
-      <option value="">{{ __('ALL SIZES') }}</option>
-      @foreach ($sizes as $row)
-        <option value="{{ $row->id }}" @selected($activeSize === (int) $row->id)>{{ strtoupper($row->value) }}</option>
-      @endforeach
-    </select>
-  </section>
+  @if ($sizes->isNotEmpty())
+    <section>
+      <h3 class="font-label-caps text-label-caps text-primary mb-6 border-b border-outline-variant pb-2">{{ __('SIZE') }}</h3>
+      <select
+        name="size_id"
+        class="w-full border-b border-outline-variant bg-transparent py-2 font-label-caps text-[11px] uppercase tracking-widest focus:border-primary focus:outline-none"
+        onchange="this.form.submit()"
+        aria-label="{{ __('Size') }}"
+      >
+        <option value="">{{ __('ALL SIZES') }}</option>
+        @foreach ($sizes as $row)
+          <option value="{{ $row->id }}" @selected($activeSize === (int) $row->id)>{{ strtoupper($row->value) }}</option>
+        @endforeach
+      </select>
+    </section>
+  @endif
 
-  <section>
-    <h3 class="font-label-caps text-label-caps text-primary mb-6 border-b border-outline-variant pb-2">{{ __('COLOR') }}</h3>
-    <select
-      name="color_id"
-      class="w-full border-b border-outline-variant bg-transparent py-2 font-label-caps text-[11px] uppercase tracking-widest focus:border-primary focus:outline-none"
-      onchange="this.form.submit()"
-      aria-label="{{ __('Color') }}"
-    >
-      <option value="">{{ __('ALL COLORS') }}</option>
-      @foreach ($colors as $row)
-        <option value="{{ $row->id }}" @selected($activeColor === (int) $row->id)>{{ strtoupper($row->value) }}</option>
-      @endforeach
-    </select>
-  </section>
+  @if ($colors->isNotEmpty())
+    <section>
+      <h3 class="font-label-caps text-label-caps text-primary mb-6 border-b border-outline-variant pb-2">{{ __('COLOR') }}</h3>
+      <select
+        name="color_id"
+        class="w-full border-b border-outline-variant bg-transparent py-2 font-label-caps text-[11px] uppercase tracking-widest focus:border-primary focus:outline-none"
+        onchange="this.form.submit()"
+        aria-label="{{ __('Color') }}"
+      >
+        <option value="">{{ __('ALL COLORS') }}</option>
+        @foreach ($colors as $row)
+          <option value="{{ $row->id }}" @selected($activeColor === (int) $row->id)>{{ strtoupper($row->value) }}</option>
+        @endforeach
+      </select>
+    </section>
+  @endif
 
   <section>
     <h3 class="font-label-caps text-label-caps text-primary mb-6 border-b border-outline-variant pb-2">{{ __('PRICE RANGE') }}</h3>

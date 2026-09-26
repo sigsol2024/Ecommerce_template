@@ -8,11 +8,6 @@
   $s = $sections ?? [];
   $heroTitle = $s['hero_title'] ?? __('Artisanship Redefined');
   $heroBg = \App\Support\PlaceholderMedia::url($s['hero_image'] ?? 'asset/images/media/home-hero-main.jpg');
-  $heroCtaHref = $s['hero_cta_href'] ?? '/shop';
-  $heroCtaUrl = \Illuminate\Support\Str::startsWith($heroCtaHref, ['http://', 'https://']) ? $heroCtaHref : url($heroCtaHref);
-  if (trim(strtoupper((string) ($s['hero_cta_text'] ?? ''))) === 'VIEW ORDER') {
-    $heroCtaUrl = route('orders.track.index');
-  }
   $promoBg = \App\Support\PlaceholderMedia::url($s['dealer_cta_bg'] ?? 'asset/images/media/home-cta-left.jpg');
   $promoCtaHref = $s['promo_cta_href'] ?? '/shop';
   $promoCtaUrl = \Illuminate\Support\Str::startsWith($promoCtaHref, ['http://', 'https://']) ? $promoCtaHref : url($promoCtaHref);
@@ -20,6 +15,9 @@
   $bestsellersTitle = trim((string) ($s['bestsellers_title'] ?? __('The Bestsellers')));
   $bestsellers = $featuredVehicles ?? collect();
   $heroSlides = $heroVehicles ?? collect();
+  // Temporary visibility flags — keep markup, hide for now.
+  $showHomeHeritage = false;
+  $showHomeJoinCircle = false;
 @endphp
 
 @section('content')
@@ -36,13 +34,121 @@
             @if (! empty($s['hero_subtitle']))
               <p class="font-body-lg text-on-surface-variant mb-7 max-w-xl">{{ $s['hero_subtitle'] }}</p>
             @endif
-            <div class="flex flex-wrap gap-3">
-              <a href="{{ $heroCtaUrl }}" class="inline-block text-white font-button-text font-semibold px-8 md:px-10 py-4 uppercase tracking-widest luxe-scale-hover luxe-transition-standard" style="background-color:#3A3C94">
-                {{ $s['hero_cta_text'] ?? __('Explore Collection') }}
-              </a>
-              <a href="{{ route('shop.index') }}" class="inline-block border border-outline-variant text-primary font-button-text px-8 md:px-10 py-4 uppercase tracking-widest hover:bg-surface-container-high luxe-transition-standard">
-                {{ __('Shop now') }}
-              </a>
+
+            <div
+              class="relative w-full max-w-xl"
+              x-data="{
+                q: '',
+                items: [],
+                open: false,
+                loading: false,
+                abort: null,
+                endpoint: @js(route('api.products.search')),
+                shopUrl: @js(route('shop.index')),
+                async search() {
+                  const term = (this.q || '').trim();
+                  if (term.length < 2) {
+                    this.items = [];
+                    this.open = false;
+                    return;
+                  }
+                  if (this.abort) { try { this.abort.abort(); } catch (e) {} }
+                  this.abort = new AbortController();
+                  this.loading = true;
+                  try {
+                    const res = await fetch(this.endpoint + '?q=' + encodeURIComponent(term), {
+                      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                      signal: this.abort.signal,
+                    });
+                    if (!res.ok) throw new Error('search failed');
+                    const data = await res.json();
+                    this.items = Array.isArray(data.items) ? data.items : [];
+                    this.open = this.items.length > 0 || term.length >= 2;
+                  } catch (e) {
+                    if (e && e.name === 'AbortError') return;
+                    this.items = [];
+                    this.open = term.length >= 2;
+                  } finally {
+                    this.loading = false;
+                  }
+                },
+                goShop() {
+                  const term = (this.q || '').trim();
+                  window.location.href = term
+                    ? (this.shopUrl + '?q=' + encodeURIComponent(term))
+                    : this.shopUrl;
+                },
+              }"
+              @keydown.escape.window="open = false"
+              @click.outside="open = false"
+            >
+              <form class="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:items-stretch" @submit.prevent="goShop()">
+                <label for="hero-product-search" class="sr-only">{{ __('Search products') }}</label>
+                <div class="relative flex-1 min-w-0">
+                  <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                    <x-icon name="search" class="w-4 h-4" />
+                  </span>
+                  <input
+                    id="hero-product-search"
+                    type="search"
+                    name="q"
+                    x-model="q"
+                    @input.debounce.250ms="search()"
+                    @focus="if ((q || '').trim().length >= 2) open = true"
+                    autocomplete="off"
+                    placeholder="{{ __('Search products…') }}"
+                    class="w-full border border-outline-variant bg-surface-container-lowest py-3.5 pl-10 pr-4 font-body-md text-body-md text-primary placeholder:text-on-surface-variant/70 focus:border-primary focus:outline-none focus:ring-0 sm:rounded-none sm:border-r-0"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="shrink-0 px-6 py-3.5 font-button-text text-sm uppercase tracking-widest text-white luxe-scale-hover luxe-transition-standard"
+                  style="background-color:#3A3C94"
+                >
+                  {{ __('Search') }}
+                </button>
+              </form>
+
+              <div
+                x-show="open"
+                x-cloak
+                x-transition
+                class="absolute z-40 mt-2 w-full overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg"
+                role="listbox"
+                aria-label="{{ __('Search results') }}"
+              >
+                <div x-show="loading" class="px-4 py-3 text-sm text-on-surface-variant">{{ __('Searching…') }}</div>
+                <div x-show="!loading && items.length === 0 && (q || '').trim().length >= 2" class="px-4 py-3 text-sm text-on-surface-variant">
+                  {{ __('No products found.') }}
+                </div>
+                <ul x-show="!loading && items.length > 0" class="max-h-[min(70vh,22rem)] overflow-y-auto divide-y divide-outline-variant">
+                  <template x-for="item in items" :key="item.id">
+                    <li>
+                      <a
+                        :href="item.url"
+                        class="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-container-high transition-colors"
+                        role="option"
+                      >
+                        <span class="h-14 w-12 shrink-0 overflow-hidden border border-outline-variant bg-surface-container-low">
+                          <img :src="item.thumbnail" :alt="item.title" class="h-full w-full object-contain object-center" loading="lazy" />
+                        </span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block truncate font-body-md text-sm text-primary" x-text="item.title"></span>
+                          <span class="mt-0.5 block text-xs text-on-surface-variant" x-show="item.category" x-text="item.category"></span>
+                          <span class="mt-0.5 block text-xs font-medium text-primary" x-show="item.price" x-text="item.price"></span>
+                        </span>
+                      </a>
+                    </li>
+                  </template>
+                </ul>
+                <a
+                  x-show="!loading && (q || '').trim().length >= 2"
+                  :href="shopUrl + '?q=' + encodeURIComponent((q || '').trim())"
+                  class="block border-t border-outline-variant px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-widest text-primary hover:bg-surface-container-high"
+                >
+                  {{ __('View all results') }}
+                </a>
+              </div>
             </div>
           </div>
 
@@ -221,8 +327,8 @@
               $img = $cover ? \App\Support\VehicleImageUrl::url($cover->path) : \App\Support\PlaceholderMedia::url('asset/images/media/home-recent-fallback.jpg');
             @endphp
             <a href="{{ route('product.show', ['slug' => $vehicle->slug]) }}" class="group cursor-pointer block">
-              <div class="aspect-[3/4] overflow-hidden border border-outline-variant mb-4 md:mb-6 relative">
-                <img src="{{ $img }}" alt="{{ $vehicle->title }}" class="w-full h-full object-cover luxe-transition-standard group-hover:scale-105" loading="lazy" />
+              <div class="aspect-[3/4] overflow-hidden border border-outline-variant mb-4 md:mb-6 relative bg-surface-container-low">
+                <img src="{{ $img }}" alt="{{ $vehicle->title }}" class="w-full h-full object-contain object-center luxe-transition-standard group-hover:scale-105" loading="lazy" />
                 @if ($vehicle->is_special)
                   <span class="absolute top-4 left-4 bg-surface-container-lowest px-3 py-1 font-label-caps text-[10px] tracking-tighter">{{ __('BESTSELLER') }}</span>
                 @endif
@@ -256,8 +362,8 @@
       </div>
     </section>
 
-    {{-- Heritage / about --}}
-    <section class="py-section-py-mobile md:py-section-py-desktop border-t border-outline-variant">
+    {{-- Heritage / about (temporarily hidden) --}}
+    <section @class(['py-section-py-mobile md:py-section-py-desktop border-t border-outline-variant', 'hidden' => ! $showHomeHeritage]) aria-hidden="{{ $showHomeHeritage ? 'false' : 'true' }}">
       <div class="max-w-[800px] mx-auto px-margin-mobile md:px-gutter text-center">
         <p class="font-label-caps text-label-caps text-secondary-fixed-dim mb-6">{{ $s['welcome_eyebrow'] ?? __('OUR HERITAGE') }}</p>
         <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-6 md:mb-8 italic">{{ $s['welcome_title'] ?? __('Crafting a New Legacy') }}</h2>
@@ -271,8 +377,8 @@
       </div>
     </section>
 
-    {{-- Newsletter --}}
-    <section class="bg-surface-container py-section-py-mobile md:py-section-py-desktop">
+    {{-- Newsletter / Join the Circle (temporarily hidden) --}}
+    <section @class(['bg-surface-container py-section-py-mobile md:py-section-py-desktop', 'hidden' => ! $showHomeJoinCircle]) aria-hidden="{{ $showHomeJoinCircle ? 'false' : 'true' }}">
       <div class="max-w-[600px] mx-auto px-margin-mobile md:px-gutter text-center">
         <h2 class="font-headline-md text-headline-md mb-4 uppercase tracking-widest">{{ __('Join the Circle') }}</h2>
         <p class="font-body-md text-body-md text-on-surface-variant mb-8 md:mb-10">{{ __('Receive exclusive access to new collections and artisanal stories.') }}</p>

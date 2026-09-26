@@ -8,10 +8,12 @@ use App\Models\SiteSetting;
 use App\Models\Vehicle;
 use App\Models\VehicleVariant;
 use App\Support\Compare;
+use App\Support\PlaceholderMedia;
 use App\Support\SiteBrand;
 use App\Support\SiteSettingDefaults;
 use App\Support\VehicleImageUrl;
 use App\Support\VehicleListingCatalog;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -657,5 +659,50 @@ class PageController extends Controller
                 'intro' => 'Compare list is dynamic and comes from visitor selections.',
             ]),
         ]);
+    }
+
+    /**
+     * Live product search for the home hero (JSON).
+     */
+    public function productSearch(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json(['items' => []]);
+        }
+
+        $like = '%'.$q.'%';
+        $vehicles = Vehicle::query()
+            ->with(['images', 'categoryOption'])
+            ->where('status', 'approved')
+            ->where(function ($builder) use ($like): void {
+                $builder
+                    ->where('title', 'like', $like)
+                    ->orWhere('slug', 'like', $like)
+                    ->orWhere('vin', 'like', $like)
+                    ->orWhere('description', 'like', $like);
+            })
+            ->orderByDesc('approved_at')
+            ->orderByDesc('id')
+            ->limit(8)
+            ->get();
+
+        $items = $vehicles->map(function (Vehicle $vehicle): array {
+            $cover = $vehicle->images->first();
+            $thumb = $cover
+                ? VehicleImageUrl::url($cover->path)
+                : PlaceholderMedia::url('asset/images/media/inventory-listing-fallback.jpg');
+
+            return [
+                'id' => $vehicle->id,
+                'title' => $vehicle->title,
+                'url' => route('product.show', ['slug' => $vehicle->slug]),
+                'price' => $vehicle->price !== null ? format_currency($vehicle->price) : null,
+                'thumbnail' => $thumb,
+                'category' => $vehicle->categoryOption?->value,
+            ];
+        })->values()->all();
+
+        return response()->json(['items' => $items]);
     }
 }

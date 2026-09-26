@@ -73,6 +73,9 @@ Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 Route::get('/makes', [PageController::class, 'makesIndex'])->name('makes.index');
 Route::get('/shop', [PageController::class, 'inventory'])->name('shop.index');
+Route::get('/api/products/search', [PageController::class, 'productSearch'])
+    ->middleware('throttle:60,1')
+    ->name('api.products.search');
 Route::get('/product/{slug}', [PageController::class, 'vehicleShow'])->name('product.show');
 Route::get('/inventory', [PageController::class, 'inventory'])->name('inventory.index');
 Route::post('/inventory/{slug}/inquiry', [VehicleInquiryController::class, 'store'])
