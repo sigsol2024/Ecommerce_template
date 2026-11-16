@@ -80,7 +80,11 @@ class CartController extends Controller
             return $this->jsonState(__('Item removed.'));
         }
 
-        return redirect()->route('cart.index')->with('status', __('Item removed.'));
+        if (Cart::itemCount() === 0) {
+            return redirect()->route('cart.index')->with('status', __('Item removed.'));
+        }
+
+        return back()->with('status', __('Item removed.'));
     }
 
     private function jsonState(?string $message = null, ?string $addedProductName = null): JsonResponse
