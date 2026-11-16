@@ -187,22 +187,24 @@
       class="fixed z-[500] w-48 bg-white border border-wp-border py-1 text-left shadow-lg rounded"
       role="menu"
     >
-      <a
-        x-show="menuTarget && menuTarget.is_self"
-        x-cloak
-        :href="menuTarget ? menuTarget.profile_url : '#'"
-        class="block w-full px-4 py-2 text-left text-sm text-wp-text hover:bg-wp-bg"
-        role="menuitem"
-        @click="closeMenus()"
-      >{{ __('Edit profile') }}</a>
       <button
         type="button"
-        x-show="menuTarget && !menuTarget.is_self"
-        x-cloak
         class="block w-full px-4 py-2 text-left text-sm text-wp-text hover:bg-wp-bg"
         role="menuitem"
         @click="openEdit(menuTarget)"
       >{{ __('Edit') }}</button>
+      <button
+        type="button"
+        x-show="menuTarget && menuTarget.is_self"
+        x-cloak
+        class="block w-full px-4 py-2 text-left text-sm text-wp-text hover:bg-wp-bg"
+        role="menuitem"
+        @click="
+          const url = menuTarget && menuTarget.profile_url ? menuTarget.profile_url : null;
+          closeMenus();
+          if (url) window.location.assign(url);
+        "
+      >{{ __('My account') }}</button>
       <button
         type="button"
         x-show="menuTarget && menuTarget.can_delete"
