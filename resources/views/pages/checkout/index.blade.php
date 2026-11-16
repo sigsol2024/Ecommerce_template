@@ -40,21 +40,7 @@
         </div>
       @endif
 
-      {{-- Remove forms live outside checkout form (nested forms are invalid HTML) --}}
-      @foreach ($lines as $idx => $line)
-        @php
-          $removeFormId = 'checkout-remove-'.$idx;
-        @endphp
-        <form id="{{ $removeFormId }}" method="post" action="{{ route('cart.remove') }}" class="hidden">
-          @csrf
-          <input type="hidden" name="vehicle_id" value="{{ (int) $line['vehicle_id'] }}" />
-          @if (! empty($line['vehicle_variant_id']))
-            <input type="hidden" name="vehicle_variant_id" value="{{ (int) $line['vehicle_variant_id'] }}" />
-          @endif
-        </form>
-      @endforeach
-
-      <form method="post" action="{{ route('checkout.store') }}" class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12" id="checkout-form">
+      <form method="post" action="{{ route('checkout.store') }}" class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12" id="checkout-form" data-checkout-page>
         @csrf
 
         {{-- Contact / shipping / payment: second on mobile, left on desktop --}}
@@ -149,9 +135,14 @@
         <aside class="order-1 lg:order-2 lg:col-span-5">
           <div class="lg:sticky lg:top-32 bg-white p-6 md:p-8 border border-[#cfc4c5] space-y-6">
             <h2 class="text-xl uppercase border-b border-[#cfc4c5] pb-4">{{ __('Order summary') }}</h2>
-            <div class="space-y-4 max-h-80 overflow-y-auto">
-              @foreach ($lines as $idx => $line)
-                <div class="flex gap-3 sm:gap-4 text-sm">
+            <div class="space-y-4 max-h-80 overflow-y-auto" data-checkout-lines>
+              @foreach ($lines as $line)
+                <div
+                  class="flex gap-3 sm:gap-4 text-sm"
+                  data-checkout-line
+                  data-vehicle-id="{{ (int) $line['vehicle_id'] }}"
+                  @if (! empty($line['vehicle_variant_id'])) data-variant-id="{{ (int) $line['vehicle_variant_id'] }}" @endif
+                >
                   @if (!empty($line['image']))
                     <img src="{{ $line['image'] }}" alt="" class="w-14 h-[4.5rem] sm:w-16 sm:h-20 object-cover bg-[#eee] shrink-0" />
                   @endif
@@ -159,9 +150,9 @@
                     <div class="flex items-start justify-between gap-2">
                       <p class="font-bold uppercase text-xs truncate">{{ $line['name'] }}</p>
                       <button
-                        type="submit"
-                        form="checkout-remove-{{ $idx }}"
-                        class="shrink-0 inline-flex items-center justify-center p-1 text-[#4c4546] hover:text-[#ba1a1a] transition-colors"
+                        type="button"
+                        class="shrink-0 inline-flex items-center justify-center p-1 text-[#4c4546] hover:text-[#ba1a1a] transition-colors disabled:opacity-40"
+                        data-checkout-remove
                         aria-label="{{ __('Remove') }} {{ $line['name'] }}"
                         title="{{ __('Remove') }}"
                       >
@@ -172,14 +163,14 @@
                       <p class="text-[10px] uppercase tracking-wide text-[#4c4546] mt-1">{{ $line['variant_label'] }}</p>
                     @endif
                     <p class="text-[#4c4546] text-xs mt-1">× {{ $line['qty'] }}</p>
-                    <p class="font-medium mt-1">{{ format_currency($line['unit_price'] * $line['qty']) }}</p>
+                    <p class="font-medium mt-1" data-checkout-line-total>{{ format_currency($line['unit_price'] * $line['qty']) }}</p>
                   </div>
                 </div>
               @endforeach
             </div>
             <div class="border-t border-[#cfc4c5] pt-4 flex justify-between font-bold">
               <span>{{ __('Total') }}</span>
-              <span>{{ format_currency($subtotal) }}</span>
+              <span data-checkout-total>{{ format_currency($subtotal) }}</span>
             </div>
 
             {{-- Desktop: actions stay in the summary column --}}
@@ -201,13 +192,17 @@
     (function () {
       var form = document.getElementById('checkout-form');
       if (!form) return;
+
+      var removeUrl = @json(route('cart.remove'));
+      var cartUrl = @json(route('cart.index'));
+      var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
       var btns = form.querySelectorAll('[data-checkout-submit]');
-      if (!btns.length) return;
 
       var selectedColor = '#3A3C94';
       var selectedBg = 'rgba(58, 60, 148, 0.08)';
 
       function syncPaymentCards() {
+        if (!btns.length) return;
         var selected = form.querySelector('input[name="payment_method"]:checked');
         var val = selected ? selected.value : '';
         form.querySelectorAll('[data-payment-method-card]').forEach(function (card) {
@@ -236,6 +231,66 @@
         });
       });
       syncPaymentCards();
+
+      function syncHeaderBadge(count) {
+        document.querySelectorAll('[data-cart-count-badge]').forEach(function (el) {
+          el.textContent = count > 9 ? '9+' : String(count);
+          el.classList.toggle('hidden', !(count > 0));
+        });
+      }
+
+      form.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-checkout-remove]');
+        if (!btn) return;
+        e.preventDefault();
+
+        var row = btn.closest('[data-checkout-line]');
+        if (!row || btn.disabled) return;
+
+        var payload = { vehicle_id: row.getAttribute('data-vehicle-id') };
+        var variantId = row.getAttribute('data-variant-id');
+        if (variantId) payload.vehicle_variant_id = variantId;
+
+        btn.disabled = true;
+        var fd = new FormData();
+        Object.keys(payload).forEach(function (k) { fd.append(k, payload[k]); });
+
+        fetch(removeUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrf,
+          },
+          body: fd,
+          credentials: 'same-origin',
+        })
+          .then(function (res) {
+            if (!res.ok) {
+              return res.json().catch(function () { return {}; }).then(function () {
+                throw new Error(@json(__('Could not remove item.')));
+              });
+            }
+            return res.json();
+          })
+          .then(function (state) {
+            row.remove();
+            syncHeaderBadge(state.count || 0);
+
+            var totalEl = form.querySelector('[data-checkout-total]');
+            if (totalEl && state.subtotal_formatted) {
+              totalEl.textContent = state.subtotal_formatted;
+            }
+
+            if (!state.count || state.count <= 0) {
+              window.location.href = cartUrl;
+              return;
+            }
+          })
+          .catch(function () {
+            btn.disabled = false;
+          });
+      });
     })();
   </script>
   @endpush
