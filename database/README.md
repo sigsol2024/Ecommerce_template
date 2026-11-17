@@ -78,47 +78,37 @@ Routes are **not** registered when the flag is false (they will not appear in `p
 
 ## Declutter catalogue import (VCP)
 
-One-time **create-only** import of the organized declutter products into native `vehicles` / `vehicle_images` / product categories. Does **not** overwrite existing products or admin edits. Not part of default `db:seed`.
+**Create-only** import of organized declutter products into native `vehicles` / `vehicle_images` / product categories. Does **not** overwrite existing products or admin edits.
+
+### Preferred: Axion-style admin auto-import
+
+After deploying code + images, **log into admin** and open any `/admin` page (or Products). Middleware `declutter.import` imports any missing `VCP-DCLT-*` SKUs using the logged-in staff user as owner/approver. A green status banner appears when new rows were created. Later visits are a cheap no-op once all SKUs exist.
+
+Disable with `DECLUTTER_ADMIN_AUTO_IMPORT=0` in `.env` (then `config:clear` / `config:cache` if used).
 
 ### Assets (must be deployed)
 
 - Data: `database/seeders/data/declutter-products.php`
-- Seeder: `database/seeders/DeclutterProductsSeeder.php`
+- Importer: `app/Services/Declutter/DeclutterCatalogueImporter.php`
+- Middleware: `app/Http/Middleware/RunDeclutterCatalogueImport.php`
 - Images: `public/asset/images/media/declutter/{import_key}/*.jpg`
+- Optional CLI: `database/seeders/DeclutterProductsSeeder.php`
 
-Stable identity is SKU (`vehicles.vin`) = `VCP-DCLT-{import_key}`. **Do not change these SKUs in admin** if you may re-run the seeder (re-run skips by `vin`; changing SKU can create a duplicate).
+Stable identity is SKU (`vehicles.vin`) = `VCP-DCLT-{import_key}`. **Do not change these SKUs in admin** if you expect auto-import to stay duplicate-safe.
 
-### Before production
+### Optional CLI seeder
 
-1. **Backup** the live database (phpMyAdmin export or `mysqldump`).
-2. Deploy code + image assets (git pull / upload).
-3. Confirm the production DB name and an existing staff user email.
+Only if you prefer Artisan instead of admin-load:
 
-### Env flags (set only for the one-time run)
-
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `DECLUTTER_SEED_ALLOW` | yes (`1`) | Safety gate (`config/declutter.php`) |
-| `DECLUTTER_SEED_CONFIRM_DB` | yes | Must **exactly** equal current `DB_DATABASE` |
-| `DECLUTTER_SEED_OWNER_EMAIL` | yes | Existing user who owns the listings (`user_id`) |
-| `DECLUTTER_SEED_APPROVER_EMAIL` | if owner is not staff | Existing admin/editor for `approved_by` |
-| `DECLUTTER_SEED_ALLOW_LOCAL` | only on `local`/`testing` | Extra gate so local/testing does not seed accidentally |
-
-Gates are read via `config/declutter.php` so they still work after `php artisan config:cache`. After changing these env values on a cached host, run `php artisan config:clear` (or rebuild the config cache) before seeding.
-
-Remove or set `DECLUTTER_SEED_ALLOW=0` after the import.
-
-### Run
-
-```bash
-php artisan db:seed --class=Database\\Seeders\\DeclutterProductsSeeder --force
-```
-
-Expected: creates missing categories (Furniture, Appliances, …), inserts products whose `vin` is not already present, attaches images **only on create**. Second run reports skips only.
+1. Backup the live database.
+2. Set `DECLUTTER_SEED_ALLOW=1`, `DECLUTTER_SEED_CONFIRM_DB=<exact DB_DATABASE>`, `DECLUTTER_SEED_OWNER_EMAIL=<existing user>`.
+3. `php artisan config:clear` (if config is cached).
+4. `php artisan db:seed --class=Database\\Seeders\\DeclutterProductsSeeder --force`
+5. Set `DECLUTTER_SEED_ALLOW=0` again.
 
 ### Behaviour guarantees
 
 - Existing unrelated products are never deleted.
 - If a declutter SKU already exists → **skip** (price, category, images untouched).
-- No demo users are created (`admin@example.com` is not used).
-- No admin-page auto-import.
+- No demo users are created.
+- Admin auto-import fails open (errors are logged; the page still loads).

@@ -144,7 +144,9 @@ Route::middleware(['auth', 'vendor.idle'])->group(function () {
         Route::get('/seller-profile', [VendorSettingsController::class, 'edit'])->name('dashboard.vendor-settings.edit');
         Route::put('/seller-profile', [VendorSettingsController::class, 'update'])->name('dashboard.vendor-settings.update');
 
-        Route::get('/vehicles', [UserVehicleController::class, 'index'])->name('dashboard.vehicles.index');
+        Route::get('/vehicles', [UserVehicleController::class, 'index'])
+            ->middleware('declutter.import')
+            ->name('dashboard.vehicles.index');
         Route::get('/vehicles/create', [UserVehicleController::class, 'create'])->name('dashboard.vehicles.create');
         Route::get('/vehicles/{vehicle}/edit', [UserVehicleController::class, 'edit'])->name('dashboard.vehicles.edit');
 
@@ -171,7 +173,7 @@ Route::middleware(['auth', 'vendor.idle'])->group(function () {
     Route::post('/dashboard/api/media', [MediaLibraryController::class, 'upload'])->name('dashboard.api.media.upload');
 });
 
-Route::middleware(['auth', 'staff', 'admin.audit'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'staff', 'declutter.import', 'admin.audit'])->prefix('admin')->group(function () {
     Route::get('/', function () {
         $user = request()->user();
         if ($user && ! $user->can('dashboard.view')) {

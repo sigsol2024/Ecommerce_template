@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureLoginOtpPending;
 use App\Http\Middleware\EnsurePendingRegistration;
 use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\RunDeclutterCatalogueImport;
 use App\Http\Middleware\TrackAdminAuditTrail;
 use App\Http\Middleware\TrackPublicTraffic;
 use App\Http\Middleware\VendorIdleTimeout;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'admin.audit' => TrackAdminAuditTrail::class,
+            'declutter.import' => RunDeclutterCatalogueImport::class,
             'login.otp.pending' => EnsureLoginOtpPending::class,
             'pending.registration' => EnsurePendingRegistration::class,
             'vendor.idle' => VendorIdleTimeout::class,

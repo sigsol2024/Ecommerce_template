@@ -237,6 +237,13 @@
           </div>
         @endif
         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+          @if (session('status'))
+            <div class="px-4 md:px-6 pt-4">
+              <div class="max-w-max-container mx-auto w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                {{ session('status') }}
+              </div>
+            </div>
+          @endif
           @if ($isFullBleed)
             {{ $slot }}
           @else
