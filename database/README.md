@@ -73,3 +73,52 @@ Default database name in `.env.example`: **`myauto_torque`**. Adjust `USE \`myau
 Same idea as Prestige `CREATE_ADMIN_TEMP.php`: enable **`ADMIN_BOOTSTRAP_ENABLED=true`** in `.env`, open **`/bootstrap-admin`**, create the first admin (Spatie role `admin`), then set **`ADMIN_BOOTSTRAP_ENABLED=false`** and remove the `if (config('app.admin_bootstrap_enabled')) { ... }` block from `routes/web.php` so the URL is gone.
 
 Routes are **not** registered when the flag is false (they will not appear in `php artisan route:list` until enabled).
+
+---
+
+## Declutter catalogue import (VCP)
+
+One-time **create-only** import of the organized declutter products into native `vehicles` / `vehicle_images` / product categories. Does **not** overwrite existing products or admin edits. Not part of default `db:seed`.
+
+### Assets (must be deployed)
+
+- Data: `database/seeders/data/declutter-products.php`
+- Seeder: `database/seeders/DeclutterProductsSeeder.php`
+- Images: `public/asset/images/media/declutter/{import_key}/*.jpg`
+
+Stable identity is SKU (`vehicles.vin`) = `VCP-DCLT-{import_key}`. **Do not change these SKUs in admin** if you may re-run the seeder (re-run skips by `vin`; changing SKU can create a duplicate).
+
+### Before production
+
+1. **Backup** the live database (phpMyAdmin export or `mysqldump`).
+2. Deploy code + image assets (git pull / upload).
+3. Confirm the production DB name and an existing staff user email.
+
+### Env flags (set only for the one-time run)
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `DECLUTTER_SEED_ALLOW` | yes (`1`) | Safety gate (`config/declutter.php`) |
+| `DECLUTTER_SEED_CONFIRM_DB` | yes | Must **exactly** equal current `DB_DATABASE` |
+| `DECLUTTER_SEED_OWNER_EMAIL` | yes | Existing user who owns the listings (`user_id`) |
+| `DECLUTTER_SEED_APPROVER_EMAIL` | if owner is not staff | Existing admin/editor for `approved_by` |
+| `DECLUTTER_SEED_ALLOW_LOCAL` | only on `local`/`testing` | Extra gate so local/testing does not seed accidentally |
+
+Gates are read via `config/declutter.php` so they still work after `php artisan config:cache`. After changing these env values on a cached host, run `php artisan config:clear` (or rebuild the config cache) before seeding.
+
+Remove or set `DECLUTTER_SEED_ALLOW=0` after the import.
+
+### Run
+
+```bash
+php artisan db:seed --class=Database\\Seeders\\DeclutterProductsSeeder --force
+```
+
+Expected: creates missing categories (Furniture, Appliances, …), inserts products whose `vin` is not already present, attaches images **only on create**. Second run reports skips only.
+
+### Behaviour guarantees
+
+- Existing unrelated products are never deleted.
+- If a declutter SKU already exists → **skip** (price, category, images untouched).
+- No demo users are created (`admin@example.com` is not used).
+- No admin-page auto-import.
