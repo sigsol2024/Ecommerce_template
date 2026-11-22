@@ -17,6 +17,39 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2 space-y-8">
+        @if ($order->isInquiry())
+          <div class="bg-sky-50 border border-sky-200 p-8">
+            <h3 class="font-headline-md text-headline-md text-sky-900 mb-4">{{ __('Inquiry details') }}</h3>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <dt class="text-sky-800/70 uppercase tracking-wide text-[10px] font-bold">{{ __('Channel') }}</dt>
+                <dd class="mt-1 font-semibold text-sky-950">
+                  {{ $order->inquiry_channel === 'walk_in' ? __('Walk-in') : ($order->inquiry_channel === 'call' ? __('Call') : '—') }}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-sky-800/70 uppercase tracking-wide text-[10px] font-bold">{{ __('Preferred date') }}</dt>
+                <dd class="mt-1 font-semibold text-sky-950">{{ optional($order->inquiry_preferred_date)->format('Y-m-d') ?? '—' }}</dd>
+              </div>
+              @if ($order->inquiry_preferred_slot)
+                <div>
+                  <dt class="text-sky-800/70 uppercase tracking-wide text-[10px] font-bold">{{ __('Preferred time') }}</dt>
+                  <dd class="mt-1 font-semibold text-sky-950">{{ __(ucfirst((string) $order->inquiry_preferred_slot)) }}</dd>
+                </div>
+              @endif
+              <div>
+                <dt class="text-sky-800/70 uppercase tracking-wide text-[10px] font-bold">{{ __('Phone') }}</dt>
+                <dd class="mt-1 font-semibold text-sky-950">{{ $order->customer_phone ?: '—' }}</dd>
+              </div>
+              <div class="sm:col-span-2">
+                <dt class="text-sky-800/70 uppercase tracking-wide text-[10px] font-bold">{{ __('Estimated total') }}</dt>
+                <dd class="mt-1 font-headline-md text-sky-950">{{ \App\Support\Money::formatKobo($order->total) }}</dd>
+              </div>
+            </dl>
+            <p class="mt-4 text-xs text-sky-900/70">{{ __('This is not a sale. No payment was collected.') }}</p>
+          </div>
+        @endif
+
         <div class="bg-surface-container-lowest border border-outline-variant">
           <div class="p-8 border-b border-outline-variant">
             <h3 class="font-headline-md text-headline-md">{{ __('Line items') }}</h3>
@@ -59,7 +92,7 @@
               <dd class="font-medium">{{ \App\Support\Money::formatKobo($order->shipping) }}</dd>
             </div>
             <div class="flex justify-between pt-2">
-              <dt class="font-label-caps text-label-caps">{{ __('Total') }}</dt>
+              <dt class="font-label-caps text-label-caps">{{ $order->isInquiry() ? __('Estimated total') : __('Total') }}</dt>
               <dd class="font-headline-md text-headline-md">{{ \App\Support\Money::formatKobo($order->total) }}</dd>
             </div>
           </dl>
@@ -77,10 +110,17 @@
         <div class="bg-surface-container-lowest border border-outline-variant p-8">
           <h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4">{{ __('STATUS') }}</h3>
           <div class="mb-6">@include('admin.partials.order-status-badge', ['status' => $order->status])</div>
+          @if ($errors->any())
+            <div class="mb-4 text-sm text-error">
+              @foreach ($errors->all() as $error)
+                <p>{{ $error }}</p>
+              @endforeach
+            </div>
+          @endif
           <form method="post" action="{{ route('admin.orders.status', $order) }}" class="space-y-4">
             @csrf
             <select name="status" class="w-full bg-surface-container-low border-outline-variant border py-3 px-4 font-body-md text-sm focus:ring-0 focus:border-primary">
-              @foreach (['pending_payment', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded'] as $st)
+              @foreach (['inquiry', 'pending_payment', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded'] as $st)
                 <option value="{{ $st }}" @selected($order->status === $st)>{{ ucfirst(str_replace('_', ' ', $st)) }}</option>
               @endforeach
             </select>

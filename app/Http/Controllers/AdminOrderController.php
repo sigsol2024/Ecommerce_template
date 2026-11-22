@@ -20,7 +20,7 @@ class AdminOrderController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $statusKeys = ['pending_payment', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded'];
+        $statusKeys = ['inquiry', 'pending_payment', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded'];
         $statusCounts = ['all' => Order::query()->count()];
         foreach ($statusKeys as $key) {
             $statusCounts[$key] = Order::query()->where('status', $key)->count();
@@ -46,9 +46,17 @@ class AdminOrderController extends Controller
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
         $data = $request->validate([
-            'status' => ['required', 'in:pending_payment,paid,failed,cancelled,fulfilled,refunded'],
+            'status' => ['required', 'in:inquiry,pending_payment,paid,failed,cancelled,fulfilled,refunded'],
             'delivery_status' => ['nullable', 'in:processing,packed,dispatched,in_transit,delivered,failed,returned,cancelled'],
         ]);
+
+        // Inquiries never collect payment — block marking them paid.
+        // Ecommerce bank-transfer / COD still have a Payment row (often pending) and must remain markable as paid.
+        if ($data['status'] === 'paid' && ($order->isInquiry() || ! $order->payments()->exists())) {
+            return back()->withErrors([
+                'status' => __('Cannot mark as paid without a payment record. Inquiries are not sales.'),
+            ]);
+        }
 
         $order->update([
             'status' => $data['status'],

@@ -47,6 +47,10 @@ class OrderPaymentCompletionService
                 return false;
             }
 
+            if ($order->status === 'inquiry' || $order->isInquiry()) {
+                return false;
+            }
+
             if ($amountPaid > 0 && $amountPaid < (int) $order->total) {
                 return false;
             }

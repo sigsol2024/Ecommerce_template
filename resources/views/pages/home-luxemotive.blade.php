@@ -17,7 +17,6 @@
   $heroSlides = $heroVehicles ?? collect();
   // Temporary visibility flags — keep markup, hide for now.
   $showHomeHeritage = false;
-  $showHomeJoinCircle = false;
 @endphp
 
 @section('content')
@@ -377,18 +376,5 @@
       </div>
     </section>
 
-    {{-- Newsletter / Join the Circle (temporarily hidden) --}}
-    <section @class(['bg-surface-container py-section-py-mobile md:py-section-py-desktop', 'hidden' => ! $showHomeJoinCircle]) aria-hidden="{{ $showHomeJoinCircle ? 'false' : 'true' }}">
-      <div class="max-w-[600px] mx-auto px-margin-mobile md:px-gutter text-center">
-        <h2 class="font-headline-md text-headline-md mb-4 uppercase tracking-widest">{{ __('Join the Circle') }}</h2>
-        <p class="font-body-md text-body-md text-on-surface-variant mb-8 md:mb-10">{{ __('Receive exclusive access to new collections and artisanal stories.') }}</p>
-        <form class="flex flex-col md:flex-row gap-4" method="get" action="{{ route('contact') }}">
-          <input type="email" name="email" class="flex-1 bg-transparent border-b border-primary py-3 px-2 font-label-caps text-label-caps focus:outline-none focus:border-secondary-fixed-dim luxe-transition-standard" placeholder="{{ __('EMAIL ADDRESS') }}" />
-          <button type="submit" class="bg-primary text-on-primary font-button-text px-8 md:px-10 py-4 uppercase tracking-widest luxe-scale-hover luxe-transition-standard">
-            {{ __('SUBSCRIBE') }}
-          </button>
-        </form>
-      </div>
-    </section>
   </main>
 @endsection

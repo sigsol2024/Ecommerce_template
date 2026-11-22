@@ -26,6 +26,9 @@ class Order extends Model
         'total',
         'currency',
         'status',
+        'inquiry_channel',
+        'inquiry_preferred_date',
+        'inquiry_preferred_slot',
         'delivery_status',
         'tracking_number',
         'stock_deducted_at',
@@ -40,10 +43,16 @@ class Order extends Model
             'shipping' => 'integer',
             'tax' => 'integer',
             'total' => 'integer',
+            'inquiry_preferred_date' => 'date',
             'stock_deducted_at' => 'datetime',
             'customer_notified_at' => 'datetime',
             'admin_notified_at' => 'datetime',
         ];
+    }
+
+    public function isInquiry(): bool
+    {
+        return $this->status === 'inquiry';
     }
 
     public static function generateOrderNumber(): string

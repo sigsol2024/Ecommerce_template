@@ -2,6 +2,7 @@
   $status = (string) ($status ?? '');
   $classes = match ($status) {
       'paid' => 'active-status-badge',
+      'inquiry' => 'bg-sky-50 text-sky-800 border border-sky-200',
       'pending_payment' => 'border border-outline text-on-surface-variant bg-transparent',
       'fulfilled' => 'bg-primary text-on-primary',
       'failed', 'cancelled' => 'bg-error/10 text-error border border-error/20',

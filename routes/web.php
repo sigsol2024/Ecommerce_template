@@ -59,15 +59,17 @@ Route::redirect('/admin/login', '/login', 302);
 
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
-Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+// Contact page + form disabled (SMTP abuse mitigation). Named routes kept only so old links 404 cleanly.
+Route::get('/contact', [ContactController::class, 'disabled'])->name('contact');
+Route::post('/contact', [ContactController::class, 'disabled'])->middleware('throttle:5,1')->name('contact.submit');
 Route::get('/privacy-policy', [PageController::class, 'privacyPolicy'])->name('privacy-policy');
 Route::get('/terms', [PageController::class, 'terms'])->name('terms');
-Route::post('/contact', [ContactController::class, 'submit'])->middleware('throttle:5,1')->name('contact.submit');
 
 Route::middleware('auth')->group(function () {
     Route::get('/auth/google/welcome', [GoogleAuthController::class, 'welcome'])->name('auth.google.welcome');
 });
-Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])
+// Newsletter signup disabled (SMTP abuse mitigation).
+Route::match(['get', 'post'], '/newsletter/subscribe', [NewsletterController::class, 'disabled'])
     ->middleware('throttle:10,1')
     ->name('newsletter.subscribe');
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
@@ -78,7 +80,8 @@ Route::get('/api/products/search', [PageController::class, 'productSearch'])
     ->name('api.products.search');
 Route::get('/product/{slug}', [PageController::class, 'vehicleShow'])->name('product.show');
 Route::get('/inventory', [PageController::class, 'inventory'])->name('inventory.index');
-Route::post('/inventory/{slug}/inquiry', [VehicleInquiryController::class, 'store'])
+// Product inquiry form disabled (same outbound SMTP path as contact).
+Route::match(['get', 'post'], '/inventory/{slug}/inquiry', [VehicleInquiryController::class, 'disabled'])
     ->middleware('throttle:10,1')
     ->name('inventory.inquiry');
 Route::get('/inventory/{slug?}', [PageController::class, 'vehicleShow'])->name('inventory.show');

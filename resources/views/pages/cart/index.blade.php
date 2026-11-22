@@ -3,27 +3,28 @@
 @section('content')
   @php
     $lineCount = \App\Support\Cart::count();
+    $labels = $labels ?? \App\Support\StorefrontMode::labels();
   @endphp
   <div class="luxe-store bg-background text-on-background min-h-screen luxe-geometric-bg font-body-md" data-cart-page>
     <div class="max-w-max-container mx-auto px-margin-mobile md:px-gutter pt-24 md:pt-28 pb-section-py-mobile md:pb-section-py-desktop">
       <nav class="mb-8 md:mb-12 flex items-center gap-2 font-label-caps text-label-caps text-on-surface-variant">
         <a href="{{ route('shop.index') }}" class="hover:text-black transition-colors">{{ __('Shop') }}</a>
         <span>/</span>
-        <span class="text-primary underline">{{ __('Shopping Bag') }}</span>
+        <span class="text-primary underline">{{ $labels['shopping_bag'] }}</span>
       </nav>
 
       <div class="mb-8 rounded border border-outline-variant bg-white px-4 py-3 text-sm hidden" data-cart-flash role="status"></div>
 
       @if ($lines === [])
         <div class="py-20 text-center" data-cart-empty>
-          <p class="text-lg font-medium mb-6">{{ __('Your bag is empty.') }}</p>
+          <p class="text-lg font-medium mb-6">{{ $labels['bag_empty'] }}</p>
           <a href="{{ route('shop.index') }}" class="inline-block bg-black text-white px-8 py-4 text-xs font-bold uppercase tracking-[0.2em] hover:opacity-90">{{ __('Continue shopping') }}</a>
         </div>
       @else
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-16" data-cart-content>
           <section class="lg:col-span-8 space-y-8" data-cart-lines>
             <div class="flex justify-between items-end border-b border-outline-variant pb-4">
-              <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg uppercase">{{ __('Your Bag') }}</h1>
+              <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg uppercase">{{ $labels['shopping_bag'] }}</h1>
               <span class="font-label-caps text-label-caps text-on-surface-variant" data-cart-item-count>{{ trans_choice(':count item|:count items', $lineCount, ['count' => $lineCount]) }}</span>
             </div>
 
@@ -72,22 +73,24 @@
           </section>
 
           <aside class="lg:col-span-4 lg:sticky lg:top-32 h-fit bg-white p-8 border border-[#cfc4c5]">
-            <h2 class="text-xl uppercase mb-8 border-b border-[#cfc4c5] pb-4">{{ __('Order Summary') }}</h2>
+            <h2 class="text-xl uppercase mb-8 border-b border-[#cfc4c5] pb-4">{{ !empty($inquiryMode) ? __('Selection summary') : __('Order Summary') }}</h2>
             <div class="space-y-6">
               <div class="flex justify-between">
                 <span class="text-[#4c4546]">{{ __('Subtotal') }}</span>
                 <span class="font-bold" data-cart-subtotal>{{ format_currency($subtotal) }}</span>
               </div>
+              @unless (!empty($inquiryMode))
               <div class="flex justify-between">
                 <span class="text-[#4c4546]">{{ __('Shipping') }}</span>
                 <span class="text-[#78582f]">{{ __('Calculated at checkout') }}</span>
               </div>
+              @endunless
               <div class="border-t border-[#cfc4c5] pt-6 flex justify-between items-center">
                 <span class="text-sm font-bold uppercase tracking-widest">{{ __('Total') }}</span>
                 <span class="text-2xl font-medium" data-cart-total>{{ format_currency($subtotal) }}</span>
               </div>
               <a href="{{ route('checkout.index') }}" class="block w-full bg-black text-white text-center py-5 text-xs font-bold uppercase tracking-[0.25em] hover:opacity-90 transition-opacity">
-                {{ __('Proceed to checkout') }}
+                {{ $labels['proceed_checkout'] }}
               </a>
               <a href="{{ route('shop.index') }}" class="block text-center text-[10px] font-bold uppercase tracking-widest text-[#4c4546] hover:text-black pt-2">
                 {{ __('Continue shopping') }}
@@ -111,8 +114,8 @@
   'i18n' => [
     'item' => __('item'),
     'items' => __('items'),
-    'empty' => __('Your bag is empty.'),
-    'error' => __('Could not update bag.'),
+    'empty' => ($labels ?? \App\Support\StorefrontMode::labels())['bag_empty'],
+    'error' => ($labels ?? \App\Support\StorefrontMode::labels())['error_other'],
     'continueShopping' => __('Continue shopping'),
   ],
   'shopUrl' => route('shop.index'),

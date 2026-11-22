@@ -9,7 +9,7 @@
     type="button"
     class="flex items-center gap-3 px-4 py-3 rounded-full bg-primary text-on-primary shadow-lg hover:opacity-95 transition-opacity border-0 cursor-pointer"
     data-cart-toggle
-    aria-label="{{ __('Open shopping bag') }}"
+    aria-label="{{ \App\Support\StorefrontMode::labels()['open_bag'] }}"
   >
     <x-icon name="shopping-bag" class="w-5 h-5 shrink-0" />
     <span class="flex flex-col items-start leading-tight text-left">

@@ -12,6 +12,11 @@ final class CheckoutPaymentMethods
     public static function enabledForCheckout(): array
     {
         $site = SiteSettingDefaults::mergeWithDatabase(SiteSetting::allKeyed());
+
+        if (StorefrontMode::inquiryEnabled($site)) {
+            return [];
+        }
+
         $methods = [];
 
         if (self::isPaystackEnabled($site)) {

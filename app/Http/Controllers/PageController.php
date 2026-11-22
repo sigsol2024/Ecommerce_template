@@ -225,6 +225,8 @@ class PageController extends Controller
 
     public function contact()
     {
+        abort(404);
+
         $page = $this->resolvePublicPage('contact', 'Contact Us', 'Reach our concierge team for styling consultations and order inquiries.');
         $siteName = SiteBrand::displayName();
         $dealerEmail = SiteSetting::getValue('dealer_public_email', '') ?: SiteSettingDefaults::resolvedNotifyEmail();
@@ -559,7 +561,8 @@ class PageController extends Controller
         $logoPath = trim((string) ($siteMerged['logo_path'] ?? ''));
         $logoUrl = trim((string) ($siteMerged['logo_url'] ?? ''));
         $sitePhone = trim((string) ($siteMerged['dealer_phone'] ?? '')) ?: trim((string) ($siteMerged['dealer_sales_phone'] ?? ''));
-        $siteEmail = trim((string) ($siteMerged['dealer_public_email'] ?? '')) ?: (string) config('mail.from.address', '');
+        // Do not fall back to MAIL_FROM_ADDRESS — that is often the SMTP mailbox and must stay private.
+        $siteEmail = trim((string) ($siteMerged['dealer_public_email'] ?? ''));
         $siteAddress = trim((string) ($siteMerged['dealer_address'] ?? ''));
 
         $posterName = trim((string) ($vehicle->user?->name ?? '')) ?: __('Store');

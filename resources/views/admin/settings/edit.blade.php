@@ -114,6 +114,11 @@
             <label for="dealer_sales_phone" class="block text-sm font-medium text-zinc-700">{{ __('Sales phone (optional)') }}</label>
             <input type="text" name="dealer_sales_phone" id="dealer_sales_phone" value="{{ old('dealer_sales_phone', $settings['dealer_sales_phone']) }}" class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm"/>
           </div>
+          <div>
+            <label for="inquiry_whatsapp_number" class="block text-sm font-medium text-zinc-700">{{ __('Inquiry WhatsApp Number') }}</label>
+            <input type="text" name="inquiry_whatsapp_number" id="inquiry_whatsapp_number" value="{{ old('inquiry_whatsapp_number', $settings['inquiry_whatsapp_number'] ?? '') }}" class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm" placeholder="+2348012345678" autocomplete="tel"/>
+            <p class="mt-1 text-xs text-zinc-500">{{ __('Used only for the inquiry “Continue to WhatsApp” link. Include country code. Separate from Sales phone.') }}</p>
+          </div>
           <div class="grid gap-4 md:col-span-2 md:grid-cols-2">
             @foreach ([['social_facebook', 'Facebook'], ['social_instagram', 'Instagram'], ['social_linkedin', 'LinkedIn'], ['social_youtube', 'YouTube / video']] as [$key, $label])
               <div>
@@ -180,27 +185,40 @@
           <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">{{ __('Newsletter & contact') }}</h2>
         </div>
         <div class="space-y-4 px-6 py-5">
-          <label class="flex items-center gap-3">
-            <input type="checkbox" name="newsletter_enabled" value="1" @checked(old('newsletter_enabled', $settings['newsletter_enabled']) === '1') class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"/>
-            <span class="text-sm text-zinc-800">{{ __('Enable footer newsletter form') }}</span>
-          </label>
-          <div>
-            <label for="newsletter_note" class="block text-sm font-medium text-zinc-700">{{ __('Footer newsletter helper text') }}</label>
-            <input type="text" name="newsletter_note" id="newsletter_note" value="{{ old('newsletter_note', $settings['newsletter_note']) }}" class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm"/>
-          </div>
+          <p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {{ __('Public contact page, contact form, newsletter signup, and product inquiry endpoints are disabled to stop SMTP abuse. These settings no longer publish forms on the storefront.') }}
+          </p>
+          <input type="hidden" name="newsletter_enabled" value="0" />
           <div>
             <label for="dealer_public_email" class="block text-sm font-medium text-zinc-700">{{ __('Public dealer email (staff listings)') }}</label>
             <input type="email" name="dealer_public_email" id="dealer_public_email" value="{{ old('dealer_public_email', $settings['dealer_public_email'] ?? '') }}" placeholder="{{ config('mail.from.address') }}" class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm"/>
-            <p class="mt-1 text-xs text-zinc-500">{{ __('Shown on vehicle detail when the listing is staff-owned. Separate from admin notification email.') }}</p>
+            <p class="mt-1 text-xs text-zinc-500">{{ __('Avoid putting the SMTP mailbox address here if it is publicly visible on listings. Prefer a non-auth mailbox or leave blank.') }}</p>
           </div>
           <div>
-            <label for="contact_notify_email" class="block text-sm font-medium text-zinc-700">{{ __('Contact & newsletter notifications email') }}</label>
+            <label for="contact_notify_email" class="block text-sm font-medium text-zinc-700">{{ __('Internal notification email (orders / admin alerts)') }}</label>
             <input type="email" name="contact_notify_email" id="contact_notify_email" value="{{ old('contact_notify_email', $settings['contact_notify_email']) }}" placeholder="{{ config('mail.outbound.admin_to') }}" class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm"/>
-            <p class="mt-1 text-xs text-zinc-500">{{ __('Overrides MAIL_TO_ADMIN when set.') }}</p>
+            <p class="mt-1 text-xs text-zinc-500">{{ __('Not shown publicly. Overrides MAIL_TO_ADMIN when set.') }}</p>
           </div>
           <div>
-            <label for="contact_from_name" class="block text-sm font-medium text-zinc-700">{{ __('Outbound “to” display name for contact mails') }}</label>
+            <label for="contact_from_name" class="block text-sm font-medium text-zinc-700">{{ __('Outbound “to” display name') }}</label>
             <input type="text" name="contact_from_name" id="contact_from_name" value="{{ old('contact_from_name', $settings['contact_from_name']) }}" placeholder="Admin" class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm"/>
+          </div>
+        </div>
+      </section>
+
+      <section class="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div class="border-b border-zinc-100 bg-zinc-50 px-6 py-4">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-700">{{ __('Storefront mode') }}</h2>
+          <p class="mt-1 text-xs text-zinc-500">{{ __('When Inquiry mode is on, the storefront uses select/inquire wording, hides payments, and saves inquiry orders instead of sales.') }}</p>
+        </div>
+        <div class="px-6 py-5">
+          <div class="flex items-start gap-3 rounded-lg border border-zinc-200 p-4">
+            <input type="hidden" name="storefront_inquiry_mode" value="0" />
+            <input type="checkbox" name="storefront_inquiry_mode" id="storefront_inquiry_mode" value="1" class="mt-1 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500" @checked(old('storefront_inquiry_mode', $settings['storefront_inquiry_mode'] ?? '0') === '1') />
+            <div class="min-w-0 flex-1">
+              <label for="storefront_inquiry_mode" class="block text-sm font-semibold text-zinc-900">{{ __('Inquiry mode') }}</label>
+              <p class="mt-1 text-xs text-zinc-500">{{ __('Off = full ecommerce (bag, checkout, payments). On = inquiry workflow with optional WhatsApp continue.') }}</p>
+            </div>
           </div>
         </div>
       </section>

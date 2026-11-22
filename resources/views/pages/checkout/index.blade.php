@@ -2,21 +2,25 @@
 
 @section('content')
   @php
-    $hasPaystack = collect($paymentMethods)->contains(fn ($m) => $m['id'] === 'paystack');
-    $hasBank = collect($paymentMethods)->contains(fn ($m) => $m['id'] === 'bank_transfer');
-    $hasCod = collect($paymentMethods)->contains(fn ($m) => $m['id'] === 'pay_on_delivery');
+    $labels = $labels ?? \App\Support\StorefrontMode::labels();
+    $inquiryMode = $inquiryMode ?? \App\Support\StorefrontMode::inquiryEnabled();
+    $hasPaystack = ! $inquiryMode && collect($paymentMethods)->contains(fn ($m) => $m['id'] === 'paystack');
+    $hasBank = ! $inquiryMode && collect($paymentMethods)->contains(fn ($m) => $m['id'] === 'bank_transfer');
+    $hasCod = ! $inquiryMode && collect($paymentMethods)->contains(fn ($m) => $m['id'] === 'pay_on_delivery');
+    $oldChannel = old('inquiry_channel', 'walk_in');
+    $canSubmit = $inquiryMode || ! empty($paymentMethods);
   @endphp
   <div class="luxe-store bg-background text-on-background min-h-screen luxe-geometric-bg font-body-md">
     <div class="max-w-max-container mx-auto px-margin-mobile md:px-gutter pt-24 md:pt-28 pb-section-py-mobile md:pb-section-py-desktop">
       <nav class="mb-8 md:mb-10 flex items-center gap-2 font-label-caps text-label-caps text-on-surface-variant">
         <a href="{{ route('shop.index') }}" class="hover:text-black">{{ __('Shop') }}</a>
         <span>/</span>
-        <a href="{{ route('cart.index') }}" class="hover:text-black">{{ __('Bag') }}</a>
+        <a href="{{ route('cart.index') }}" class="hover:text-black">{{ $labels['bag'] }}</a>
         <span>/</span>
-        <span class="text-black">{{ __('Checkout') }}</span>
+        <span class="text-black">{{ $labels['checkout'] }}</span>
       </nav>
 
-      <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg uppercase mb-8 md:mb-10">{{ __('Checkout') }}</h1>
+      <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg uppercase mb-8 md:mb-10">{{ $labels['checkout'] }}</h1>
 
       @if (session('status'))
         <div class="mb-8 rounded border border-outline-variant bg-white px-4 py-3 text-sm text-on-surface">
@@ -24,7 +28,7 @@
         </div>
       @endif
 
-      @if (empty($paymentMethods))
+      @if (! $inquiryMode && empty($paymentMethods))
         <div class="mb-8 rounded border border-[#ba1a1a]/30 bg-[#ffdad6]/40 px-4 py-3 text-sm text-[#93000a]">
           {{ __('No payment methods are enabled yet. Please contact the store or try again later.') }}
         </div>
@@ -40,10 +44,9 @@
         </div>
       @endif
 
-      <form method="post" action="{{ route('checkout.store') }}" class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12" id="checkout-form" data-checkout-page>
+      <form method="post" action="{{ route('checkout.store') }}" class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12" id="checkout-form" data-checkout-page @if($inquiryMode) data-inquiry-mode="1" @endif>
         @csrf
 
-        {{-- Contact / shipping / payment: second on mobile, left on desktop --}}
         <div class="order-2 lg:order-1 lg:col-span-7 space-y-10 bg-surface-container-low p-6 md:p-8 rounded-sm border border-outline-variant">
           <section>
             <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4c4546] mb-6">{{ __('Contact') }}</h2>
@@ -55,13 +58,13 @@
                 <input name="customer_email" type="email" value="{{ old('customer_email') }}" required class="w-full bg-white/80 border-0 border-b border-[#cfc4c5] py-3 px-2 focus:ring-0 focus:border-black" placeholder="{{ __('Email') }}" />
               </div>
               <div>
-                <input name="customer_phone" value="{{ old('customer_phone') }}" class="w-full bg-white/80 border-0 border-b border-[#cfc4c5] py-3 px-2 focus:ring-0 focus:border-black" placeholder="{{ __('Phone') }}" />
+                <input name="customer_phone" value="{{ old('customer_phone') }}" @if($inquiryMode) required @endif class="w-full bg-white/80 border-0 border-b border-[#cfc4c5] py-3 px-2 focus:ring-0 focus:border-black" placeholder="{{ __('Phone') }}" />
               </div>
             </div>
           </section>
 
           <section>
-            <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4c4546] mb-6">{{ __('Shipping address') }}</h2>
+            <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4c4546] mb-6">{{ $labels['address_section'] }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="md:col-span-2">
                 <input name="shipping_address_line1" value="{{ old('shipping_address_line1') }}" required class="w-full bg-white/80 border-0 border-b border-[#cfc4c5] py-3 px-2 focus:ring-0 focus:border-black" placeholder="{{ __('Street address') }}" />
@@ -89,52 +92,82 @@
             </div>
           </section>
 
-          <section>
-            <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4c4546] mb-4">{{ __('Payment method') }}</h2>
-            <div class="flex flex-col sm:flex-row flex-wrap gap-2" role="radiogroup" aria-label="{{ __('Payment method') }}" data-payment-method-group>
-              @if ($hasPaystack)
-                <label class="payment-method-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto sm:max-w-[11.5rem]" data-payment-method-card>
-                  <input type="radio" name="payment_method" value="paystack" class="sr-only" @checked(old('payment_method', $defaultPaymentMethod) === 'paystack') required />
-                  <img src="{{ asset('asset/images/brands/paystack-logo.png') }}" alt="Paystack" class="h-5 w-auto max-w-[96px] object-contain shrink-0" width="96" height="18" />
-                  <span class="text-[9px] uppercase tracking-wide text-on-surface-variant leading-tight">{{ __('Card & online') }}</span>
+          @if ($inquiryMode)
+            <section data-inquiry-fields>
+              <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4c4546] mb-4">{{ __('How would you like to continue?') }}</h2>
+              <div class="flex flex-col sm:flex-row flex-wrap gap-2 mb-6" role="radiogroup" aria-label="{{ __('Inquiry channel') }}">
+                <label class="inquiry-channel-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto" data-inquiry-channel-card>
+                  <input type="radio" name="inquiry_channel" value="walk_in" class="sr-only" @checked($oldChannel === 'walk_in') required />
+                  <span class="text-[10px] font-semibold uppercase tracking-wide text-primary leading-tight">{{ __('Walk-in') }}</span>
                 </label>
-              @endif
-              @if ($hasBank)
-                <label class="payment-method-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto sm:max-w-[11.5rem]" data-payment-method-card>
-                  <input type="radio" name="payment_method" value="bank_transfer" class="sr-only" @checked(old('payment_method', $defaultPaymentMethod) === 'bank_transfer') @if(! $hasPaystack) required @endif />
-                  <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container text-[#3A3C94]">
-                    <x-icon name="building-library" class="w-4 h-4" />
-                  </span>
-                  <span class="text-[10px] font-semibold uppercase tracking-wide text-primary leading-tight">{{ __('Bank transfer') }}</span>
+                <label class="inquiry-channel-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto" data-inquiry-channel-card>
+                  <input type="radio" name="inquiry_channel" value="call" class="sr-only" @checked($oldChannel === 'call') />
+                  <span class="text-[10px] font-semibold uppercase tracking-wide text-primary leading-tight">{{ __('Call') }}</span>
                 </label>
-              @endif
-              @if ($hasCod)
-                <label class="payment-method-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto sm:max-w-[11.5rem]" data-payment-method-card>
-                  <input type="radio" name="payment_method" value="pay_on_delivery" class="sr-only" @checked(old('payment_method', $defaultPaymentMethod) === 'pay_on_delivery') @if(! $hasPaystack && ! $hasBank) required @endif />
-                  <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container text-[#3A3C94]">
-                    <x-icon name="truck" class="w-4 h-4" />
-                  </span>
-                  <span class="text-[10px] font-semibold uppercase tracking-wide text-primary leading-tight">{{ __('Pay on delivery') }}</span>
-                </label>
-              @endif
-            </div>
-          </section>
+              </div>
 
-          {{-- Mobile: Place order after the form --}}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label for="inquiry_preferred_date" class="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#4c4546] mb-2">{{ __('Preferred date') }}</label>
+                  <input type="date" name="inquiry_preferred_date" id="inquiry_preferred_date" value="{{ old('inquiry_preferred_date') }}" min="{{ now()->toDateString() }}" required class="w-full bg-white/80 border-0 border-b border-[#cfc4c5] py-3 px-2 focus:ring-0 focus:border-black" />
+                </div>
+                <div data-inquiry-slot-wrap class="{{ $oldChannel === 'call' ? '' : 'hidden' }}">
+                  <label for="inquiry_preferred_slot" class="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#4c4546] mb-2">{{ __('Preferred time (optional)') }}</label>
+                  <select name="inquiry_preferred_slot" id="inquiry_preferred_slot" class="w-full bg-white/80 border-0 border-b border-[#cfc4c5] py-3 px-2 focus:ring-0 focus:border-black">
+                    <option value="">{{ __('Any time') }}</option>
+                    <option value="morning" @selected(old('inquiry_preferred_slot') === 'morning')>{{ __('Morning') }}</option>
+                    <option value="afternoon" @selected(old('inquiry_preferred_slot') === 'afternoon')>{{ __('Afternoon') }}</option>
+                    <option value="evening" @selected(old('inquiry_preferred_slot') === 'evening')>{{ __('Evening') }}</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+          @else
+            <section>
+              <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4c4546] mb-4">{{ __('Payment method') }}</h2>
+              <div class="flex flex-col sm:flex-row flex-wrap gap-2" role="radiogroup" aria-label="{{ __('Payment method') }}" data-payment-method-group>
+                @if ($hasPaystack)
+                  <label class="payment-method-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto sm:max-w-[11.5rem]" data-payment-method-card>
+                    <input type="radio" name="payment_method" value="paystack" class="sr-only" @checked(old('payment_method', $defaultPaymentMethod) === 'paystack') required />
+                    <img src="{{ asset('asset/images/brands/paystack-logo.png') }}" alt="Paystack" class="h-5 w-auto max-w-[96px] object-contain shrink-0" width="96" height="18" />
+                    <span class="text-[9px] uppercase tracking-wide text-on-surface-variant leading-tight">{{ __('Card & online') }}</span>
+                  </label>
+                @endif
+                @if ($hasBank)
+                  <label class="payment-method-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto sm:max-w-[11.5rem]" data-payment-method-card>
+                    <input type="radio" name="payment_method" value="bank_transfer" class="sr-only" @checked(old('payment_method', $defaultPaymentMethod) === 'bank_transfer') @if(! $hasPaystack) required @endif />
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container text-[#3A3C94]">
+                      <x-icon name="building-library" class="w-4 h-4" />
+                    </span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wide text-primary leading-tight">{{ __('Bank transfer') }}</span>
+                  </label>
+                @endif
+                @if ($hasCod)
+                  <label class="payment-method-card inline-flex flex-row items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-all bg-white/90 w-full sm:w-auto sm:max-w-[11.5rem]" data-payment-method-card>
+                    <input type="radio" name="payment_method" value="pay_on_delivery" class="sr-only" @checked(old('payment_method', $defaultPaymentMethod) === 'pay_on_delivery') @if(! $hasPaystack && ! $hasBank) required @endif />
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container text-[#3A3C94]">
+                      <x-icon name="truck" class="w-4 h-4" />
+                    </span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wide text-primary leading-tight">{{ __('Pay on delivery') }}</span>
+                  </label>
+                @endif
+              </div>
+            </section>
+          @endif
+
           <div class="lg:hidden space-y-3 pt-2 border-t border-outline-variant">
-            <button type="submit" class="w-full bg-black text-white py-5 text-xs font-bold uppercase tracking-[0.25em] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" data-checkout-submit @disabled(empty($paymentMethods))>
-              {{ __('Place order') }}
+            <button type="submit" class="w-full bg-black text-white py-5 text-xs font-bold uppercase tracking-[0.25em] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" data-checkout-submit @disabled(! $canSubmit)>
+              {{ $labels['place_order'] }}
             </button>
             <a href="{{ route('cart.index') }}" class="block w-full text-center border border-outline-variant text-on-surface-variant py-3 text-xs font-bold uppercase tracking-[0.2em] hover:border-primary hover:text-primary transition-colors">
-              {{ __('Back to bag') }}
+              {{ $labels['back_to_bag'] }}
             </a>
           </div>
         </div>
 
-        {{-- Order summary: first on mobile, right on desktop --}}
         <aside class="order-1 lg:order-2 lg:col-span-5">
           <div class="lg:sticky lg:top-32 bg-white p-6 md:p-8 border border-[#cfc4c5] space-y-6">
-            <h2 class="text-xl uppercase border-b border-[#cfc4c5] pb-4">{{ __('Order summary') }}</h2>
+            <h2 class="text-xl uppercase border-b border-[#cfc4c5] pb-4">{{ $inquiryMode ? __('Selection summary') : __('Order summary') }}</h2>
             <div class="space-y-4 max-h-80 overflow-y-auto" data-checkout-lines>
               @foreach ($lines as $line)
                 <div
@@ -169,17 +202,16 @@
               @endforeach
             </div>
             <div class="border-t border-[#cfc4c5] pt-4 flex justify-between font-bold">
-              <span>{{ __('Total') }}</span>
+              <span>{{ $inquiryMode ? __('Estimated total') : __('Total') }}</span>
               <span data-checkout-total>{{ format_currency($subtotal) }}</span>
             </div>
 
-            {{-- Desktop: actions stay in the summary column --}}
             <div class="hidden lg:block space-y-3">
               <a href="{{ route('cart.index') }}" class="block w-full text-center border border-outline-variant text-on-surface-variant py-3 text-xs font-bold uppercase tracking-[0.2em] hover:border-primary hover:text-primary transition-colors">
-                {{ __('Back to bag') }}
+                {{ $labels['back_to_bag'] }}
               </a>
-              <button type="submit" class="w-full bg-black text-white py-5 text-xs font-bold uppercase tracking-[0.25em] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" data-checkout-submit @disabled(empty($paymentMethods))>
-                {{ __('Place order') }}
+              <button type="submit" class="w-full bg-black text-white py-5 text-xs font-bold uppercase tracking-[0.25em] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" data-checkout-submit @disabled(! $canSubmit)>
+                {{ $labels['place_order'] }}
               </button>
             </div>
           </div>
@@ -193,44 +225,80 @@
       var form = document.getElementById('checkout-form');
       if (!form) return;
 
+      var inquiryMode = form.getAttribute('data-inquiry-mode') === '1';
       var removeUrl = @json(route('cart.remove'));
       var cartUrl = @json(route('cart.index'));
       var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
       var btns = form.querySelectorAll('[data-checkout-submit]');
+      var placeOrderLabel = @json($labels['place_order']);
 
       var selectedColor = '#3A3C94';
       var selectedBg = 'rgba(58, 60, 148, 0.08)';
 
-      function syncPaymentCards() {
-        if (!btns.length) return;
-        var selected = form.querySelector('input[name="payment_method"]:checked');
-        var val = selected ? selected.value : '';
-        form.querySelectorAll('[data-payment-method-card]').forEach(function (card) {
+      function styleCards(selector, name) {
+        form.querySelectorAll(selector).forEach(function (card) {
           var input = card.querySelector('input[type="radio"]');
           var on = input && input.checked;
           card.style.borderColor = on ? selectedColor : '#cfc4c5';
           card.style.backgroundColor = on ? selectedBg : 'rgba(255, 255, 255, 0.9)';
           card.style.boxShadow = on ? '0 0 0 1px ' + selectedColor : 'none';
         });
+      }
+
+      function syncInquiryChannel() {
+        if (!inquiryMode) return;
+        styleCards('[data-inquiry-channel-card]', 'inquiry_channel');
+        var selected = form.querySelector('input[name="inquiry_channel"]:checked');
+        var isCall = selected && selected.value === 'call';
+        var slotWrap = form.querySelector('[data-inquiry-slot-wrap]');
+        if (slotWrap) slotWrap.classList.toggle('hidden', !isCall);
+        if (!isCall) {
+          var slot = form.querySelector('#inquiry_preferred_slot');
+          if (slot) slot.value = '';
+        }
+      }
+
+      function syncPaymentCards() {
+        if (inquiryMode || !btns.length) return;
+        styleCards('[data-payment-method-card]', 'payment_method');
+        var selected = form.querySelector('input[name="payment_method"]:checked');
+        var val = selected ? selected.value : '';
         var label = val === 'paystack'
           ? @json(__('Pay with Paystack'))
-          : @json(__('Place order'));
+          : placeOrderLabel;
         btns.forEach(function (btn) { btn.textContent = label; });
       }
 
-      form.querySelectorAll('input[name="payment_method"]').forEach(function (radio) {
-        radio.addEventListener('change', syncPaymentCards);
-      });
-      form.querySelectorAll('[data-payment-method-card]').forEach(function (card) {
-        card.addEventListener('click', function () {
-          var input = card.querySelector('input[type="radio"]');
-          if (input) {
-            input.checked = true;
-            syncPaymentCards();
-          }
+      if (inquiryMode) {
+        form.querySelectorAll('input[name="inquiry_channel"]').forEach(function (radio) {
+          radio.addEventListener('change', syncInquiryChannel);
         });
-      });
-      syncPaymentCards();
+        form.querySelectorAll('[data-inquiry-channel-card]').forEach(function (card) {
+          card.addEventListener('click', function () {
+            var input = card.querySelector('input[type="radio"]');
+            if (input) {
+              input.checked = true;
+              syncInquiryChannel();
+            }
+          });
+        });
+        syncInquiryChannel();
+        btns.forEach(function (btn) { btn.textContent = placeOrderLabel; });
+      } else {
+        form.querySelectorAll('input[name="payment_method"]').forEach(function (radio) {
+          radio.addEventListener('change', syncPaymentCards);
+        });
+        form.querySelectorAll('[data-payment-method-card]').forEach(function (card) {
+          card.addEventListener('click', function () {
+            var input = card.querySelector('input[type="radio"]');
+            if (input) {
+              input.checked = true;
+              syncPaymentCards();
+            }
+          });
+        });
+        syncPaymentCards();
+      }
 
       function syncHeaderBadge(count) {
         document.querySelectorAll('[data-cart-count-badge]').forEach(function (el) {

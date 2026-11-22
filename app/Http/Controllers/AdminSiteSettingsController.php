@@ -40,7 +40,9 @@ class AdminSiteSettingsController extends Controller
             'favicon_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,ico', 'max:2048'],
             'dealer_phone' => ['nullable', 'string', 'max:64'],
             'dealer_sales_phone' => ['nullable', 'string', 'max:64'],
+            'inquiry_whatsapp_number' => ['nullable', 'string', 'max:64', 'regex:/^[\d\s\+\-\(\)]*$/'],
             'dealer_address' => ['nullable', 'string', 'max:500'],
+            'storefront_inquiry_mode' => ['nullable', 'string', 'max:1'],
             'dealer_hours_label' => ['nullable', 'string', 'max:120'],
             'dealer_sales_hours' => ['nullable', 'string', 'max:5000'],
             'dealer_service_hours' => ['nullable', 'string', 'max:5000'],
@@ -101,10 +103,17 @@ class AdminSiteSettingsController extends Controller
             $validated['footer_blog_entries_json'] = '[]';
         }
 
-        $validated['newsletter_enabled'] = $request->boolean('newsletter_enabled') ? '1' : '0';
+        // Public newsletter form is disabled site-wide (SMTP abuse mitigation).
+        $validated['newsletter_enabled'] = '0';
+        $validated['newsletter_note'] = $validated['newsletter_note'] ?? '';
         $validated['payment_paystack_enabled'] = $request->boolean('payment_paystack_enabled') ? '1' : '0';
         $validated['payment_bank_transfer_enabled'] = $request->boolean('payment_bank_transfer_enabled') ? '1' : '0';
         $validated['payment_pay_on_delivery_enabled'] = $request->boolean('payment_pay_on_delivery_enabled') ? '1' : '0';
+        $validated['storefront_inquiry_mode'] = $request->boolean('storefront_inquiry_mode') ? '1' : '0';
+        $inquiryWa = trim((string) ($validated['inquiry_whatsapp_number'] ?? ''));
+        $validated['inquiry_whatsapp_number'] = $inquiryWa !== ''
+            ? (preg_replace('/[^\d+]/', '', $inquiryWa) ?? '')
+            : '';
 
         foreach (SiteSettingDefaults::managedKeys() as $key) {
             $value = $validated[$key] ?? '';
@@ -165,6 +174,7 @@ class AdminSiteSettingsController extends Controller
             SiteSetting::setValue($key, $value);
         }
 
+        Cache::forget('site_settings_array');
         Cache::store('file')->forget('site_settings_merged_v1');
     }
 }

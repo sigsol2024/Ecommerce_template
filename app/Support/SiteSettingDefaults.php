@@ -25,6 +25,8 @@ final class SiteSettingDefaults
             'auth_panel_image_path' => '',
             'dealer_phone' => '+1 212-226-3126',
             'dealer_sales_phone' => '',
+            'inquiry_whatsapp_number' => '',
+            'storefront_inquiry_mode' => '0',
             'dealer_address' => '1840 E Garvey Ave South West Covina, CA 91791',
             'dealer_hours_label' => 'Work Hours',
             'dealer_sales_hours' => $hours,

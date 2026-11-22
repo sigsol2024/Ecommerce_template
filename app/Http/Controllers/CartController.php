@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use App\Support\Cart;
+use App\Support\StorefrontMode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,8 +18,12 @@ class CartController extends Controller
             return $this->jsonState();
         }
 
+        $labels = StorefrontMode::labels();
+
         return view('pages.cart.index', [
-            'title' => __('Shopping Bag'),
+            'title' => $labels['shopping_bag'],
+            'labels' => $labels,
+            'inquiryMode' => StorefrontMode::inquiryEnabled(),
             'lines' => Cart::lines(),
             'subtotal' => Cart::subtotal(),
         ]);
@@ -37,13 +42,15 @@ class CartController extends Controller
         $vehicleId = (int) $data['vehicle_id'];
         Cart::add($vehicleId, (int) ($data['qty'] ?? 1), $variantId);
 
+        $labels = StorefrontMode::labels();
+
         if ($request->wantsJson()) {
             $productName = (string) (Vehicle::query()->whereKey($vehicleId)->value('title') ?? '');
 
-            return $this->jsonState(__('Added to your bag.'), $productName);
+            return $this->jsonState($labels['added_to_cart'], $productName);
         }
 
-        return back()->with('status', __('Added to your bag.'));
+        return back()->with('status', $labels['added_to_cart']);
     }
 
     public function update(Request $request): RedirectResponse|JsonResponse
@@ -58,11 +65,13 @@ class CartController extends Controller
 
         Cart::updateQty((int) $data['vehicle_id'], (int) $data['qty'], $variantId);
 
+        $labels = StorefrontMode::labels();
+
         if ($request->wantsJson()) {
-            return $this->jsonState(__('Bag updated.'));
+            return $this->jsonState($labels['updated_cart']);
         }
 
-        return redirect()->route('cart.index')->with('status', __('Bag updated.'));
+        return redirect()->route('cart.index')->with('status', $labels['updated_cart']);
     }
 
     public function remove(Request $request): RedirectResponse|JsonResponse

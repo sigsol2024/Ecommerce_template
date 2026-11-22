@@ -48,6 +48,10 @@ class PaystackWebhookController extends Controller
             return response('Payment not found', 404);
         }
 
+        if ($payment->order->isInquiry()) {
+            return response('Ignored inquiry order', 200);
+        }
+
         if ($payment->order->isPaid()) {
             $completion->fulfillPaidOrder($payment->order);
 

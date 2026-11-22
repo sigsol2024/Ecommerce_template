@@ -1,5 +1,6 @@
 @php
   $site = $site ?? [];
+  $storefrontLabels = \App\Support\StorefrontMode::labels($site);
   $brandName = \App\Support\SiteBrand::displayName($site);
   $logoPath = trim((string) ($site['logo_path'] ?? ''));
   if ($logoPath === '') {
@@ -74,7 +75,7 @@
     <a href="{{ route('shop.index') }}" class="hidden xl:inline-flex items-center justify-center bg-black text-white px-5 py-2 font-button-text text-button-text uppercase tracking-[0.2em] hover:opacity-90 transition-opacity" aria-label="{{ __('Shop now') }}">
       {{ __('Shop now') }}
     </a>
-    <button type="button" class="text-primary hover:scale-110 transition-transform relative inline-flex items-center justify-center {{ $cartActive ? 'font-bold' : '' }}" aria-label="{{ __('Bag') }}" data-cart-toggle>
+    <button type="button" class="text-primary hover:scale-110 transition-transform relative inline-flex items-center justify-center {{ $cartActive ? 'font-bold' : '' }}" aria-label="{{ $storefrontLabels['bag'] }}" data-cart-toggle>
       <x-icon name="shopping-bag" class="w-6 h-6" />
       <span class="luxe-cart-badge absolute -top-1 -right-1 min-w-[1rem] h-4 px-1 bg-primary text-on-primary text-[9px] font-bold flex items-center justify-center {{ $cartCount > 0 ? '' : 'hidden' }}" data-cart-count-badge>{{ $cartCount > 9 ? '9+' : $cartCount }}</span>
     </button>
@@ -158,9 +159,6 @@
         <li>
           <a href="{{ route('about') }}" class="block py-3 text-xs font-medium uppercase tracking-[0.12em] text-on-surface-variant hover:text-[#3A3C94] transition-colors" data-luxe-mobile-nav-close-link>{{ __('About us') }}</a>
         </li>
-        <li>
-          <a href="{{ route('contact') }}" class="block py-3 text-xs font-medium uppercase tracking-[0.12em] text-on-surface-variant hover:text-[#3A3C94] transition-colors" data-luxe-mobile-nav-close-link>{{ __('Contact') }}</a>
-        </li>
       </ul>
     </nav>
 
@@ -196,9 +194,9 @@
 {{-- Cart slide-over drawer (right side, mobile-first) --}}
 <div class="luxe-store fixed inset-0 z-[60] hidden" data-cart-drawer aria-hidden="true">
   <div class="absolute inset-0 bg-black/40" data-cart-overlay></div>
-  <aside class="absolute top-0 right-0 h-full w-full sm:max-w-md bg-background shadow-2xl flex flex-col" role="dialog" aria-label="{{ __('Shopping bag') }}">
+  <aside class="absolute top-0 right-0 h-full w-full sm:max-w-md bg-background shadow-2xl flex flex-col" role="dialog" aria-label="{{ $storefrontLabels['shopping_bag'] }}">
     <header class="flex items-center justify-between px-5 py-5 border-b border-outline-variant">
-      <h2 class="font-headline-md text-headline-md uppercase tracking-widest text-primary">{{ __('Shopping bag') }}</h2>
+      <h2 class="font-headline-md text-headline-md uppercase tracking-widest text-primary">{{ $storefrontLabels['shopping_bag'] }}</h2>
       <button type="button" class="text-primary inline-flex items-center justify-center" aria-label="{{ __('Close') }}" data-cart-close>
         <x-icon name="close" class="w-6 h-6" />
       </button>
@@ -206,7 +204,7 @@
 
     <div class="flex-1 overflow-y-auto px-5 py-4" data-cart-lines>
       {{-- Lines injected by JS --}}
-      <p class="py-12 text-center text-on-surface-variant font-body-md text-body-md" data-cart-empty>{{ __('Your bag is empty.') }}</p>
+      <p class="py-12 text-center text-on-surface-variant font-body-md text-body-md" data-cart-empty>{{ $storefrontLabels['bag_empty'] }}</p>
     </div>
 
     <footer class="border-t border-outline-variant px-5 py-5 space-y-4 bg-background">
@@ -215,10 +213,10 @@
         <span class="font-body-lg text-body-lg font-semibold text-primary" data-cart-subtotal>{{ format_currency(\App\Support\Cart::subtotal()) }}</span>
       </div>
       <a href="{{ route('checkout.index') }}" class="block w-full text-center bg-primary text-on-primary py-4 font-button-text text-button-text uppercase tracking-[0.25em] hover:opacity-90 transition-opacity">
-        {{ __('Checkout') }}
+        {{ $storefrontLabels['checkout'] }}
       </a>
       <a href="{{ route('cart.index') }}" class="block w-full text-center border border-primary text-primary py-4 font-button-text text-button-text uppercase tracking-[0.25em] hover:bg-primary hover:text-on-primary transition-colors">
-        {{ __('View bag') }}
+        {{ $storefrontLabels['view_bag'] }}
       </a>
     </footer>
   </aside>
@@ -233,15 +231,15 @@
     'remove' => route('cart.remove'),
   ],
   'i18n' => [
-    'empty'      => __('Your bag is empty.'),
+    'empty'      => $storefrontLabels['bag_empty'],
     'qty'        => __('Qty'),
     'remove'     => __('Remove'),
     'added'      => __('Added').' ✓',
-    'addedToCart' => __(':product has been added to cart'),
+    'addedToCart' => $storefrontLabels['added_to_cart_toast'],
     'item'       => __('item'),
     'items'      => __('items'),
-    'errorAdd'   => __('Could not add to bag.'),
-    'errorOther' => __('Could not update bag.'),
+    'errorAdd'   => $storefrontLabels['error_add'],
+    'errorOther' => $storefrontLabels['error_other'],
   ],
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>

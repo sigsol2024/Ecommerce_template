@@ -30,6 +30,11 @@ final class CmsNavigation
 
     public static function isVisible(string $slug): bool
     {
+        // Contact page removed from public site (SMTP abuse mitigation).
+        if ($slug === 'contact') {
+            return false;
+        }
+
         return (self::visibilityMap())[$slug] ?? true;
     }
 

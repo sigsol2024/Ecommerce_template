@@ -7,6 +7,5 @@
     @if (!empty($showTerms))
       <a href="{{ route('terms') }}" class="hover:text-wp-link transition-colors">{{ __('Terms of service') }}</a>
     @endif
-    <a href="{{ route('contact') }}" class="hover:text-wp-link transition-colors">{{ __('Contact us') }}</a>
   </div>
 </footer>

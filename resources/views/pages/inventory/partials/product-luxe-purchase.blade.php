@@ -65,7 +65,7 @@
 
   <div class="grid grid-cols-2 gap-3 mb-6">
     <button type="submit" form="add-to-cart-form" class="bg-primary text-on-primary py-4 px-3 font-button-text text-button-text uppercase tracking-[0.2em] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 text-center">
-      {{ __('Add to bag') }}
+      {{ \App\Support\StorefrontMode::labels()['add_to_cart'] }}
     </button>
     @auth
       <form method="post" action="{{ route('favorites.toggle', ['vehicle' => $vehicle->id]) }}" class="contents">

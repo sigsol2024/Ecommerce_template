@@ -118,22 +118,5 @@
       </div>
     </section>
 
-    <section class="bg-surface-container-high py-24 relative z-10">
-      <div class="max-w-[600px] mx-auto px-gutter text-center">
-        <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary mb-4 uppercase tracking-tighter">{{ $s['newsletter_title'] ?? __('Join the Circle') }}</h2>
-        <p class="font-body-md text-body-md text-on-surface-variant mb-10">{{ $s['newsletter_body'] ?? '' }}</p>
-        @if (((string) ($site['newsletter_enabled'] ?? '0')) === '1')
-          @php $note = trim((string) ($site['newsletter_note'] ?? '')); @endphp
-          @if ($note !== '')
-            <p class="font-body-md text-body-md text-on-surface-variant mb-6">{{ $note }}</p>
-          @endif
-          <form class="flex flex-col md:flex-row gap-0" method="post" action="{{ route('newsletter.subscribe') }}">
-            @csrf
-            <input class="flex-grow bg-transparent border-b border-primary px-4 py-4 focus:ring-0 focus:outline-none placeholder:text-outline font-label-caps text-label-caps uppercase" name="email" type="email" placeholder="{{ __('Your email address') }}" required />
-            <button class="bg-primary text-on-primary px-8 py-4 uppercase font-button-text text-button-text tracking-widest hover:bg-on-surface hover:text-surface transition-colors" type="submit">{{ __('Subscribe') }}</button>
-          </form>
-        @endif
-      </div>
-    </section>
   </div>
 @endsection

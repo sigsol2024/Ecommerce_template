@@ -1,9 +1,10 @@
 <x-app-layout>
   @php
-    $statusTabs = ['', 'pending_payment', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded'];
+    $statusTabs = ['', 'inquiry', 'pending_payment', 'paid', 'fulfilled', 'failed', 'cancelled', 'refunded'];
     $totalShown = $orders->total();
     $statusLabels = [
       '' => __('All'),
+      'inquiry' => __('Inquiry'),
       'pending_payment' => __('Pending payment'),
       'paid' => __('Paid'),
       'fulfilled' => __('Fulfilled'),
@@ -17,6 +18,7 @@
     $statusCounts = $statusCounts ?? ['all' => 0];
     $paidCount = (int) ($statusCounts['paid'] ?? 0);
     $pendingCount = (int) ($statusCounts['pending_payment'] ?? 0);
+    $inquiryCount = (int) ($statusCounts['inquiry'] ?? 0);
   @endphp
 
   <div
@@ -42,10 +44,14 @@
     <x-admin.page-header :title="__('Orders')" :count="trans_choice(':count order|:count orders', $totalShown, ['count' => number_format($totalShown)])" />
 
     <x-admin.page-content>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <x-admin.card variant="stats">
           <span class="text-xs uppercase tracking-wide text-wp-text-muted">{{ __('Total orders') }}</span>
           <span class="text-2xl font-semibold text-wp-text leading-none">{{ number_format((int) ($statusCounts['all'] ?? 0)) }}</span>
+        </x-admin.card>
+        <x-admin.card variant="stats">
+          <span class="text-xs uppercase tracking-wide text-wp-text-muted">{{ __('Inquiry') }}</span>
+          <span class="text-2xl font-semibold text-wp-text leading-none">{{ number_format($inquiryCount) }}</span>
         </x-admin.card>
         <x-admin.card variant="stats">
           <span class="text-xs uppercase tracking-wide text-wp-text-muted">{{ __('Paid') }}</span>
@@ -116,7 +122,12 @@
                     </div>
                   </td>
                   <td class="px-4 py-3 border-b border-wp-border text-wp-text-muted whitespace-nowrap">{{ $order->created_at?->format('M j, Y') }}</td>
-                  <td class="px-4 py-3 border-b border-wp-border font-semibold whitespace-nowrap">{{ \App\Support\Money::formatKobo($order->total) }}</td>
+                  <td class="px-4 py-3 border-b border-wp-border font-semibold whitespace-nowrap">
+                    {{ \App\Support\Money::formatKobo($order->total) }}
+                    @if ($order->isInquiry())
+                      <span class="block text-[10px] font-normal uppercase tracking-wide text-wp-text-muted">{{ __('Estimated') }}</span>
+                    @endif
+                  </td>
                   <td class="px-4 py-3 border-b border-wp-border">
                     @include('admin.partials.order-status-badge', ['status' => $order->status])
                   </td>

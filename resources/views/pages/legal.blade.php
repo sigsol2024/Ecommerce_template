@@ -38,15 +38,6 @@
           @endif
         </article>
 
-        <div class="mt-10 pt-6 border-t border-outline-variant flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <p class="font-body-md text-body-md text-on-surface-variant">
-            {{ __('Need help or have a question?') }}
-          </p>
-          <a href="{{ route('contact') }}" class="inline-flex items-center gap-2 font-label-caps text-label-caps uppercase border-b border-primary pb-1 hover:text-secondary hover:border-secondary transition-all">
-            {{ __('Contact us') }}
-            <x-icon name="arrow-right" class="w-3.5 h-3.5" />
-          </a>
-        </div>
       </div>
     </div>
   </section>

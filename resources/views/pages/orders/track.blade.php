@@ -10,9 +10,11 @@
 
     $paymentKey = (string) ($order?->status ?? '');
     $deliveryKey = (string) ($order?->delivery_status ?? 'processing');
+    $isInquiry = $hasOrder && $order?->isInquiry();
     $tone = function (string $key): string {
         return match ($key) {
             'paid', 'fulfilled', 'delivered' => 'text-emerald-700',
+            'inquiry' => 'text-sky-700',
             'pending_payment', 'pending', 'processing', 'packed', 'dispatched', 'in_transit' => 'text-amber-700',
             'failed', 'cancelled', 'refunded', 'returned' => 'text-red-700',
             default => 'text-on-surface-variant',
@@ -69,26 +71,34 @@
             <div class="bg-surface-container-lowest border border-outline-variant p-6">
               <p class="font-label-caps text-label-caps text-on-surface-variant mb-3">{{ __('Status') }}</p>
               <div class="space-y-2">
-                <p class="font-body-md text-body-md">
-                  {{ __('Payment') }}:
-                  <span class="font-semibold {{ $tone($paymentKey) }}">{{ $payment }}</span>
-                </p>
-                <p class="font-body-md text-body-md">
-                  {{ __('Delivery') }}:
-                  <span class="font-semibold {{ $tone($deliveryKey) }}">{{ $delivery }}</span>
-                </p>
+                @if ($isInquiry)
+                  <p class="font-body-md text-body-md">
+                    {{ __('Inquiry') }}:
+                    <span class="font-semibold {{ $tone($paymentKey) }}">{{ $payment }}</span>
+                  </p>
+                  <p class="font-body-md text-body-md text-on-surface-variant text-sm">{{ __('Not a sale — no payment collected.') }}</p>
+                @else
+                  <p class="font-body-md text-body-md">
+                    {{ __('Payment') }}:
+                    <span class="font-semibold {{ $tone($paymentKey) }}">{{ $payment }}</span>
+                  </p>
+                  <p class="font-body-md text-body-md">
+                    {{ __('Delivery') }}:
+                    <span class="font-semibold {{ $tone($deliveryKey) }}">{{ $delivery }}</span>
+                  </p>
+                @endif
               </div>
             </div>
 
             <div class="bg-surface-container-lowest border border-outline-variant p-6">
-              <p class="font-label-caps text-label-caps text-on-surface-variant mb-3">{{ __('Totals') }}</p>
-              <p class="font-body-md text-body-md">{{ __('Total') }}: <span class="font-semibold text-primary">{{ \App\Support\Money::formatKobo($order->total) }}</span></p>
+              <p class="font-label-caps text-label-caps text-on-surface-variant mb-3">{{ $isInquiry ? __('Estimate') : __('Totals') }}</p>
+              <p class="font-body-md text-body-md">{{ $isInquiry ? __('Estimated total') : __('Total') }}: <span class="font-semibold text-primary">{{ \App\Support\Money::formatKobo($order->total) }}</span></p>
             </div>
           </div>
 
           <div class="lg:col-span-8 space-y-8">
             <div class="bg-surface-container-lowest border border-outline-variant p-6">
-              <h2 class="font-headline-md text-headline-md text-primary mb-4">{{ __('Delivery details') }}</h2>
+              <h2 class="font-headline-md text-headline-md text-primary mb-4">{{ $isInquiry ? __('Address') : __('Delivery details') }}</h2>
               <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
                 {{ $order->customer_name }}<br>
                 {{ $order->shipping_address_line1 }}<br>
