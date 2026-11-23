@@ -135,4 +135,16 @@ return [
 
     'admin_bootstrap_enabled' => (bool) env('ADMIN_BOOTSTRAP_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin auto-migrate
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, staff GET requests under /admin (and Products list) run
+    | pending Laravel migrations (php artisan migrate --force). Set to 0 to
+    | disable (e.g. locked-down hosts that only allow CLI migrate).
+    |
+    */
+    'admin_auto_migrate' => (string) env('ADMIN_AUTO_MIGRATE', '1'),
+
 ];

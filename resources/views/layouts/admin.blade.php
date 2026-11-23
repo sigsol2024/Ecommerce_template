@@ -237,6 +237,20 @@
           </div>
         @endif
         <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+          @if (session('admin_migrate_status'))
+            <div class="px-4 md:px-6 pt-4">
+              <div class="max-w-max-container mx-auto w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                {{ session('admin_migrate_status') }}
+              </div>
+            </div>
+          @endif
+          @if (session('admin_migrate_error'))
+            <div class="px-4 md:px-6 pt-4">
+              <div class="max-w-max-container mx-auto w-full rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                {{ session('admin_migrate_error') }}
+              </div>
+            </div>
+          @endif
           @if (session('status'))
             <div class="px-4 md:px-6 pt-4">
               <div class="max-w-max-container mx-auto w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
