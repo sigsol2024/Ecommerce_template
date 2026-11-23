@@ -186,9 +186,21 @@ class CheckoutController extends Controller
 
         Cart::clear();
         session()->forget('checkout.pending_order_id');
-        session(['order.awaiting_ack' => $order->id]);
+        session()->forget('order.awaiting_ack');
 
-        return redirect()->to($this->signedShowUrl($order));
+        // Primary path: open WhatsApp with a pre-filled message (inquiry already saved).
+        $site = SiteSettingDefaults::mergeWithDatabase(SiteSetting::allKeyed());
+        $digits = StorefrontMode::inquiryWhatsAppDigits($site);
+        if ($digits !== null) {
+            $order->loadMissing('items');
+
+            return redirect()->away(InquiryWhatsAppMessage::waMeUrl($digits, $order));
+        }
+
+        // No Inquiry WhatsApp number configured — stay on site with a short notice.
+        return redirect()
+            ->route('shop.index')
+            ->with('status', __('Your inquiry was recorded. We will contact you shortly.'));
     }
 
     public function paystackCallback(
